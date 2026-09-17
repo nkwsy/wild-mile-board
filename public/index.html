@@ -97,24 +97,11 @@ a{color:var(--accent);text-underline-offset:2px}
 
 .wrap{width:100%;max-width:1680px;margin:0 auto;padding:0 20px}
 
-/* ---------- shared-board bits: the local-copy banner and the password gate ---------- */
+/* ---------- shared-board bits: the local-copy banner ---------- */
 .banner{background:var(--track-aside);border-bottom:1px solid var(--line);
   color:var(--ink-2);font-size:13px;padding:7px 0}
 .banner[hidden]{display:none}
 .banner b{color:var(--ink);font-weight:600}
-.gate{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:20px;
-  background:color-mix(in srgb, var(--ground) 88%, transparent);backdrop-filter:blur(3px)}
-.gate[hidden]{display:none}
-.gate-card{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--r);padding:22px;box-shadow:var(--shadow-drag);display:grid;gap:10px}
-.gate-card h2{font-family:"Bricolage Grotesque","Public Sans",sans-serif;font-weight:800;
-  letter-spacing:-.02em;font-size:20px;margin:0}
-.gate-card p{margin:0;color:var(--ink-2);font-size:14px}
-.gate-card input{width:100%;padding:8px 10px;border:1px solid var(--line-strong);
-  border-radius:var(--r);background:var(--ground);color:var(--ink);font:inherit}
-.gate-err{color:var(--p-urgent);font-size:13px}
-.gate-err[hidden]{display:none}
-.gate-card .btn{justify-self:start;margin-top:2px}
 
 /* ---------- masthead ---------- */
 header.top{
@@ -461,7 +448,6 @@ footer{
   <div class="wrap foot-row">
     <span class="mode"><span class="dot" id="modedot"></span><span id="modetext">Loading board&hellip;</span></span>
     <span id="modenote"></span>
-    <button type="button" class="linkish" id="signout" hidden>Sign out</button>
     <span class="legend" aria-hidden="true">
       <span class="pchip Urgent">Urgent</span><span class="pchip High">High</span><span class="pchip Medium">Medium</span><span class="pchip Low">Low</span>
     </span>
@@ -528,17 +514,6 @@ footer{
   </div>
 </dialog>
 
-<div class="gate" id="gate" hidden>
-  <form class="gate-card" id="gateform">
-    <h2>Wild Mile board</h2>
-    <p>One shared board for the crew. Enter the board password to open it.</p>
-    <label class="lbl" for="gatepw">Password</label>
-    <input type="password" id="gatepw" autocomplete="current-password" required>
-    <p class="gate-err" id="gateerr" role="alert" hidden></p>
-    <button type="submit" class="btn primary" id="gatego">Open board</button>
-  </form>
-</div>
-
 <div class="sr" role="status" aria-live="polite" id="live"></div>
 
 <script>
@@ -599,7 +574,7 @@ const SEEDS = [
 const LS_KEY = "wildmile.board.v1";
 const POLL_MS = 5000;
 let cards = new Map();          // id -> card
-let mode = "loading";           // "loading" | "locked" | "shared" | "local"
+let mode = "loading";           // "loading" | "shared" | "local"
 let filters = {q:"", prios:new Set(), loc:""};
 let pollTimer = null;
 let inflight = 0;               // writes in the air; polling waits for them
@@ -662,7 +637,6 @@ function localSave(){
 async function api(method, path, body){
   const res = await fetch(path, {
     method,
-    credentials: "same-origin",
     headers: body ? {"Content-Type":"application/json"} : undefined,
     body: body ? JSON.stringify(body) : undefined
   });
@@ -680,7 +654,7 @@ async function push(run, trouble){
   try{ await run(); }
   catch(e){
     lastSig = "";
-    if(e.status === 401) needLogin(); else say(trouble);
+    say(trouble);
   }
   finally{ inflight--; }
 }
@@ -708,8 +682,7 @@ async function connect(){
     setMode("shared");
     startPolling();
   }catch(e){
-    if(e.status === 401) needLogin();               // the API is there, we just aren't in
-    else goLocal();                                 // opened as a file, or served without the API
+    goLocal();                                      // opened as a file, or served without the API
   }
 }
 function adopt(payload){
@@ -726,19 +699,10 @@ function goLocal(){
   setMode("local");
   render();
 }
-function needLogin(){
-  stopPolling();
-  cards = new Map(); lastSig = "";
-  setMode("locked");
-  render();
-  $("#gate").hidden = false;
-  $("#gatepw").focus();
-}
 
 function startPolling(){
   if(!pollTimer) pollTimer = setInterval(poll, POLL_MS);
 }
-function stopPolling(){ clearInterval(pollTimer); pollTimer = null; }
 
 /* Pick up other people's changes. Anything the user has hold of right now —
    a card mid-drag, the open editor, an open move menu, a write still in the
@@ -747,46 +711,20 @@ async function poll(){
   if(mode !== "shared") return;
   if(drag || inflight || drawer.open || document.querySelector(".movemenu")) return;
   try{ adopt(await api("GET", "/api/cards")); }
-  catch(e){ if(e.status === 401) needLogin(); }
+  catch(e){ /* a blip; the next tick tries again */ }
 }
 
 document.addEventListener("visibilitychange", () => { if(!document.hidden) poll(); });
-
-$("#gateform").addEventListener("submit", async e => {
-  e.preventDefault();
-  const err = $("#gateerr"), go = $("#gatego");
-  err.hidden = true;
-  go.disabled = true;
-  try{
-    await api("POST", "/api/login", {password: $("#gatepw").value});
-    $("#gatepw").value = "";
-    $("#gate").hidden = true;
-    await connect();
-  }catch(ex){
-    err.hidden = false;
-    err.textContent = ex.status === 401 ? "That password didn't work."
-      : ex.status === 503 ? "No board password is set on the server yet."
-      : "Couldn't reach the board just now.";
-    $("#gatepw").select();
-  }finally{ go.disabled = false; }
-});
-$("#signout").addEventListener("click", async () => {
-  try{ await api("POST", "/api/logout"); }catch(e){ /* the cookie expires on its own */ }
-  needLogin();
-});
 
 function setMode(m){
   mode = m;
   const shared = m === "shared";
   $("#modedot").classList.toggle("on", shared);
-  $("#modetext").textContent = shared ? "Shared board" : m === "local" ? "This browser only" : "Locked";
+  $("#modetext").textContent = shared ? "Shared board" : "This browser only";
   $("#modenote").textContent = shared
     ? "Cards, moves and edits are saved for everyone who opens this page."
-    : m === "local"
-      ? "Changes save locally in this browser only \u2014 other people won't see them."
-      : "Enter the board password to see the shared board.";
+    : "Changes save locally in this browser only \u2014 other people won't see them.";
   $("#banner").hidden = m !== "local";
-  $("#signout").hidden = !shared;
 }
 
 /* ============================ rendering ============================ */

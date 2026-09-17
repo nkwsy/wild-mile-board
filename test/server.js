@@ -1,15 +1,13 @@
 "use strict";
 /* Local stand-in for Vercel: serves public/ and routes /api/* to the same
    handler modules Vercel deploys. Run with
-   DATABASE_URL=... BOARD_PASSWORD=... npm run dev */
+   DATABASE_URL=... npm run dev */
 
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
 const ROUTES = {
-  "/api/login": require("../api/login"),
-  "/api/logout": require("../api/logout"),
   "/api/cards": require("../api/cards")
 };
 const PUBLIC = path.join(__dirname, "..", "public");

@@ -5,22 +5,17 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-process.env.BOARD_PASSWORD = process.env.BOARD_PASSWORD || "test-password";
-delete process.env.BOARD_SECRET;
-
 const { createServer } = require("./server");
 const db = require("../lib/db");
 
-let base, server, cookie = "";
+let base, server;
 
 const call = async (method, path, body) => {
   const res = await fetch(base + path, {
     method,
-    headers: { ...(cookie ? { cookie } : {}), ...(body ? { "content-type": "application/json" } : {}) },
+    headers: body ? { "content-type": "application/json" } : {},
     body: body ? JSON.stringify(body) : undefined
   });
-  const set = res.headers.getSetCookie?.()[0];
-  if (set) cookie = set.split(";")[0];
   const text = await res.text();
   return { status: res.status, body: text ? JSON.parse(text) : null };
 };
@@ -33,21 +28,7 @@ test.before(async () => {
 });
 test.after(async () => { await db.close(); server.closeAllConnections(); server.close(); });
 
-test("cards are refused without a session", async () => {
-  assert.equal((await call("GET", "/api/cards")).status, 401);
-  assert.equal((await call("POST", "/api/cards", { title: "sneaky" })).status, 401);
-  assert.equal((await call("DELETE", "/api/cards?id=tr-ramp")).status, 401);
-});
-
-test("the wrong password does not open the board", async () => {
-  assert.equal((await call("POST", "/api/login", { password: "nope" })).status, 401);
-  assert.equal(cookie, "");
-});
-
-test("the right password opens the board and seeds it", async () => {
-  assert.equal((await call("POST", "/api/login", { password: "test-password" })).status, 200);
-  assert.ok(cookie.startsWith("board_session="));
-
+test("the board is open to anyone and seeds itself", async () => {
   const { status, body } = await call("GET", "/api/cards");
   assert.equal(status, 200);
   assert.equal(body.cards.length, 11);
@@ -91,34 +72,16 @@ test("junk input is rejected or squared away, never stored raw", async () => {
   assert.equal((await call("PATCH", "/api/cards", { col: "done" })).status, 400);
 });
 
-test("a tampered cookie is not a session", async () => {
-  const good = cookie;
-  cookie = good.slice(0, -1) + (good.endsWith("A") ? "B" : "A");
-  assert.equal((await call("GET", "/api/cards")).status, 401);
-  cookie = good;
-  assert.equal((await call("GET", "/api/cards")).status, 200);
-});
-
 test("bad input gets a bad-request answer, not a crash", async () => {
   const res = await fetch(base + "/api/cards", {
-    method: "POST", headers: { cookie, "content-type": "application/json" }, body: "{not json"
+    method: "POST", headers: { "content-type": "application/json" }, body: "{not json"
   });
   assert.equal(res.status, 400);
   assert.equal((await res.json()).error, "body is not valid JSON");
 
-  const junkCookie = await fetch(base + "/api/cards", { headers: { cookie: "board_session=%E0%A4%A" } });
-  assert.equal(junkCookie.status, 401, "a cookie with a broken escape is refused, not a 500");
-});
-
-test("a board with no password configured trusts nothing", async () => {
-  const saved = process.env.BOARD_PASSWORD;
-  delete process.env.BOARD_PASSWORD;                  // BOARD_SECRET is unset for this whole file
-  try {
-    assert.equal((await call("GET", "/api/cards")).status, 401,
-      "an existing session stops working once the password is gone");
-    assert.equal((await call("POST", "/api/login", { password: "" })).status, 503);
-  } finally { process.env.BOARD_PASSWORD = saved; }
-  assert.equal((await call("GET", "/api/cards")).status, 200);
+  assert.equal((await call("PUT", "/api/cards?id=missing")).status, 404, "an empty body patches nothing");
+  const bogus = await fetch(base + "/api/cards", { method: "OPTIONS" });
+  assert.equal(bogus.status, 405, "an unsupported method is refused, not a 500");
 });
 
 test("clearing the board does not bring the seed cards back", async () => {
@@ -142,10 +105,4 @@ test("POSTGRES_URL works when DATABASE_URL is absent", async () => {
     delete process.env.POSTGRES_URL;
     await db.close();
   }
-});
-
-test("logging out closes the session", async () => {
-  assert.equal((await call("POST", "/api/logout")).status, 200);
-  assert.equal(cookie, "board_session=");
-  assert.equal((await call("GET", "/api/cards")).status, 401);
 });

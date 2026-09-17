@@ -5,11 +5,9 @@
    DELETE /api/cards?id=...   remove one card                                  */
 
 const db = require("../lib/db");
-const { send, readJson, query, requireAuth, handler } = require("../lib/http");
+const { send, readJson, query, handler } = require("../lib/http");
 
 module.exports = handler(async (req, res) => {
-  if (!requireAuth(req, res)) return;
-
   const id = query(req).get("id");
 
   if (req.method === "GET") {
