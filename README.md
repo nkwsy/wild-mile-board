@@ -57,17 +57,27 @@ with the seed cards from `lib/seed.js`.
 2. Go to [vercel.com/new](https://vercel.com/new) and import the repository.
    Framework preset **Other**; leave the build command empty. `vercel.json`
    already points the output at `public/`.
-3. In the project, **Storage → Create Database → Postgres**, and attach it to
-   the project. That sets `DATABASE_URL` / `POSTGRES_URL` for you.
+3. In the project, **Storage → Create Database**, pick **Neon** (Serverless
+   Postgres) from the marketplace, and attach it to the project. Neon's Vercel
+   integration sets the connection string itself — it adds both `DATABASE_URL`
+   and `POSTGRES_URL`, and `lib/db.js` reads whichever is present, so there is
+   nothing to copy by hand. Vercel's own Postgres works the same way.
 4. **Settings → Environment Variables**, and add:
 
    | Variable | Required | What it is |
    |---|---|---|
-   | `DATABASE_URL` | yes | Postgres connection string. `POSTGRES_URL` also works; a Vercel Postgres sets one of these itself. |
+   | `DATABASE_URL` | yes | Postgres connection string. `POSTGRES_URL` is used if `DATABASE_URL` is missing; attaching a Neon or Vercel Postgres database sets both for you, so you normally add neither. |
    | `BOARD_PASSWORD` | yes | the one password the crew types to open the board. |
    | `BOARD_SECRET` | no | a long random string used to sign session cookies. Without it, a key is derived from `BOARD_PASSWORD`, which means changing the password signs everyone out. |
 
+   With neither `BOARD_PASSWORD` nor `BOARD_SECRET` set, the API refuses every
+   session outright rather than trusting a key it could not keep secret.
+
 5. **Deploy**, then open the project URL and enter the password.
+
+`package.json` pins `"engines": { "node": "22.x" }`, so the functions build on
+Node 22. Vercel retires Node 20 builds on 30 September 2026; leave the pin in
+place (or raise it) rather than removing it.
 
 Changing `BOARD_PASSWORD` later locks out anyone who has not typed the new one.
 

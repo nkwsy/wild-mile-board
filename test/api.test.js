@@ -128,6 +128,22 @@ test("clearing the board does not bring the seed cards back", async () => {
   assert.deepEqual((await call("GET", "/api/cards")).body.cards, []);
 });
 
+test("POSTGRES_URL works when DATABASE_URL is absent", async () => {
+  const saved = process.env.DATABASE_URL;
+  await db.close();                                   // drop the pool so the env is read again
+  delete process.env.DATABASE_URL;
+  process.env.POSTGRES_URL = saved;                   // what Neon's Vercel integration also sets
+  try {
+    const { status, body } = await call("GET", "/api/cards");
+    assert.equal(status, 200);
+    assert.ok(Array.isArray(body.cards));
+  } finally {
+    process.env.DATABASE_URL = saved;
+    delete process.env.POSTGRES_URL;
+    await db.close();
+  }
+});
+
 test("logging out closes the session", async () => {
   assert.equal((await call("POST", "/api/logout")).status, 200);
   assert.equal(cookie, "board_session=");

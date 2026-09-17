@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "description": "Shared Wild Mile issue board: static page plus Vercel serverless functions over Postgres.",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "node test/server.js",
     "test": "node test/api.test.js"
