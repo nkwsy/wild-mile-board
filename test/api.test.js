@@ -323,6 +323,10 @@ test("photos hang off the issue, several of them, and serve back as bytes", asyn
   assert.match(raw.headers.get("cache-control"), /immutable/);
   assert.equal((await raw.arrayBuffer()).byteLength, 70, "the bytes come back as they went in");
 
+  const onBoard = (await call("GET", "/api/issues")).body.issues.find(i => i.id === id);
+  assert.equal(onBoard.photoCount, 3);
+  assert.equal(onBoard.firstPhoto, up.body.photo.id, "the board can show the first photo without a second call");
+
   const detail = await call("GET", "/api/issues?id=" + id);
   assert.equal(detail.body.issue.photoCount, 3);
   assert.equal(detail.body.issue.photos.length, 3);
