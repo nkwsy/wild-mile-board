@@ -70,6 +70,11 @@ const ago = iso => {
   const d = daysSince(iso);
   return d < 1 ? "today" : d === 1 ? "1 day" : d + " days";
 };
+/* What the board says under a card. "today untouched" reads like nonsense. */
+const untouchedFor = iso => {
+  const d = daysSince(iso);
+  return d < 1 ? "touched today" : d + (d === 1 ? " day untouched" : " days untouched");
+};
 const shortDate = iso => {
   const t = Date.parse(iso);
   return isNaN(t) ? "" : new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -329,7 +334,7 @@ function cardHTML(i) {
     bits.push(`<span class="who">${esc(i.reporter)}</span>`);
   }
   if (i.status !== "done") {
-    bits.push(`<span class="age${stale ? " old" : ""}">${esc(ago(i.touchedAt))} untouched</span>`);
+    bits.push(`<span class="age${stale ? " old" : ""}">${esc(untouchedFor(i.touchedAt))}</span>`);
   } else if (i.closedAt) {
     bits.push(`<span class="age">closed ${esc(shortDate(i.closedAt))}</span>`);
   }
@@ -395,7 +400,7 @@ function renderList() {
   const body = $("#listbody");
   body.innerHTML = rows.map(i => {
     const stale = isStale(i);
-    const untouched = i.status === "done" ? "—" : ago(i.touchedAt);
+    const untouched = i.status === "done" ? "—" : untouchedFor(i.touchedAt);
     return `<tr data-id="${esc(i.id)}"${stale ? ' class="stale-row"' : ""}>`
       + `<td class="rowsel"><input type="checkbox" data-pick="${esc(i.id)}"`
       + `${state.selected.has(i.id) ? " checked" : ""} aria-label="Select ${esc(i.title)}"></td>`
@@ -565,7 +570,13 @@ function openReport(presetStatus) {
 /* The six places with open issues, plus whatever this phone picked last time:
    one tap covers most reports, and the free-text box covers the rest. */
 function drawWherePicks() {
-  const top = [...state.meta.locations].sort((a, b) => (b.open || 0) - (a.open || 0)).slice(0, 6);
+  // Busiest places first, but never the catch-all: offering "Wild Mile
+  // (unspecified)" as the easiest tap is how you get a board full of reports
+  // that say nothing about where they are.
+  const top = state.meta.locations
+    .filter(l => l.kind !== "other")
+    .sort((a, b) => (b.open || 0) - (a.open || 0))
+    .slice(0, 6);
   $("#where-picks").innerHTML = top.map(l =>
     `<button type="button" class="pick" data-where="${esc(l.name)}" aria-pressed="false">${esc(l.name)}</button>`
   ).join("");

@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "node test/server.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "e2e": "node test/e2e.js"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0",
