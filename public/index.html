@@ -736,9 +736,7 @@ function needLogin(){
 }
 
 function startPolling(){
-  if(pollTimer) return;
-  pollTimer = setInterval(poll, POLL_MS);
-  document.addEventListener("visibilitychange", () => { if(!document.hidden) poll(); });
+  if(!pollTimer) pollTimer = setInterval(poll, POLL_MS);
 }
 function stopPolling(){ clearInterval(pollTimer); pollTimer = null; }
 
@@ -751,6 +749,8 @@ async function poll(){
   try{ adopt(await api("GET", "/api/cards")); }
   catch(e){ if(e.status === 401) needLogin(); }
 }
+
+document.addEventListener("visibilitychange", () => { if(!document.hidden) poll(); });
 
 $("#gateform").addEventListener("submit", async e => {
   e.preventDefault();
