@@ -99,6 +99,35 @@ test("a tampered cookie is not a session", async () => {
   assert.equal((await call("GET", "/api/cards")).status, 200);
 });
 
+test("bad input gets a bad-request answer, not a crash", async () => {
+  const res = await fetch(base + "/api/cards", {
+    method: "POST", headers: { cookie, "content-type": "application/json" }, body: "{not json"
+  });
+  assert.equal(res.status, 400);
+  assert.equal((await res.json()).error, "body is not valid JSON");
+
+  const junkCookie = await fetch(base + "/api/cards", { headers: { cookie: "board_session=%E0%A4%A" } });
+  assert.equal(junkCookie.status, 401, "a cookie with a broken escape is refused, not a 500");
+});
+
+test("a board with no password configured trusts nothing", async () => {
+  const saved = process.env.BOARD_PASSWORD;
+  delete process.env.BOARD_PASSWORD;                  // BOARD_SECRET is unset for this whole file
+  try {
+    assert.equal((await call("GET", "/api/cards")).status, 401,
+      "an existing session stops working once the password is gone");
+    assert.equal((await call("POST", "/api/login", { password: "" })).status, 503);
+  } finally { process.env.BOARD_PASSWORD = saved; }
+  assert.equal((await call("GET", "/api/cards")).status, 200);
+});
+
+test("clearing the board does not bring the seed cards back", async () => {
+  const before = (await call("GET", "/api/cards")).body.cards;
+  for (const c of before) assert.equal((await call("DELETE", "/api/cards?id=" + c.id)).status, 200);
+  await db.close();                                   // as if the next request hit a cold function
+  assert.deepEqual((await call("GET", "/api/cards")).body.cards, []);
+});
+
 test("logging out closes the session", async () => {
   assert.equal((await call("POST", "/api/logout")).status, 200);
   assert.equal(cookie, "board_session=");
