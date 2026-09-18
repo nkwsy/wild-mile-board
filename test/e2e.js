@@ -107,6 +107,16 @@ async function desktopBoard(browser, base) {
   page.on("dialog", d => d.accept());
   page.on("pageerror", e => check(false, "no page errors — got " + e.message));
 
+  // The seeded templates all have season windows, so whether any of them is due
+  // in the next sixty days depends on the month. Add a year-round one first, so
+  // the generate check tests the mechanism rather than the calendar.
+  await page.request.post(base + "/api/recurring", {
+    data: {
+      title: "Anchor check after storms", severity: "Important", location: "2017 Garden",
+      cadence: "every_days", intervalDays: 7, seasonStart: "01-01", seasonEnd: "12-31"
+    }
+  });
+
   await page.goto(base, { waitUntil: "networkidle" });
   await page.waitForSelector(".card");
 
@@ -118,11 +128,12 @@ async function desktopBoard(browser, base) {
   // Recurring inspections: generate, and watch them land as dated issues.
   await page.click('[data-view="recurring"]');
   await page.waitForSelector(".tpl");
-  check(await page.locator(".tpl").count() === 5, "five seeded inspection templates");
+  check(await page.locator(".tpl").count() === 6, "five seeded inspection templates, plus the one just added");
   await page.click("#gen-run");
   await page.waitForFunction(() => /scheduled through|Nothing new/.test(document.querySelector("#gen-note").textContent));
   const genNote = await page.locator("#gen-note").textContent();
-  check(/\d+ inspections? scheduled through/.test(genNote), "generating says what it made: " + genNote.trim());
+  const made = Number((/^(\d+) inspections? scheduled through/.exec(genNote.trim()) || [])[1]);
+  check(made >= 8, "generating says what it made: " + genNote.trim());
   await page.screenshot({ path: path.join(OUT, "desktop-inspections.png") });
 
   await page.click('[data-view="board"]');

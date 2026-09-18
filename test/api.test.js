@@ -380,12 +380,16 @@ test("recurring inspections generate dated issues, once", async () => {
   assert.equal(made.status, 201);
   const tplId = made.body.template.id;
 
-  const gen = await call("POST", "/api/recurring?do=generate", { templateId: tplId, days: 28, actor: "Nick Wesley" });
+  // An explicit window, so the count does not depend on what today happens to be.
+  const window = { templateId: tplId, from: "2027-01-01", to: "2027-01-29" };
+  const gen = await call("POST", "/api/recurring?do=generate", { ...window, actor: "Nick Wesley" });
   assert.equal(gen.status, 200);
-  assert.equal(gen.body.created.length, 5, "four weeks at a seven-day cadence, endpoints included");
+  assert.deepEqual(gen.body.created.map(c => c.dueOn),
+    ["2027-01-01", "2027-01-08", "2027-01-15", "2027-01-22", "2027-01-29"],
+    "four weeks at a seven-day cadence, both endpoints included");
   assert.equal(gen.body.skipped, 0);
 
-  const again = await call("POST", "/api/recurring?do=generate", { templateId: tplId, days: 28 });
+  const again = await call("POST", "/api/recurring?do=generate", window);
   assert.equal(again.body.created.length, 0, "running it twice does not double the work");
   assert.equal(again.body.skipped, 5);
 
@@ -393,7 +397,7 @@ test("recurring inspections generate dated issues, once", async () => {
   assert.equal(instances.body.issues.length, 5);
   const first = instances.body.issues[0];
   assert.equal(first.status, "scheduled");
-  assert.ok(first.dueOn, "an instance is dated");
+  assert.equal(first.dueOn, "2027-01-01", "an instance is dated");
   assert.match(first.dueReason, /Recurring inspection/);
   assert.equal(first.locationId, "loc-2017-garden");
 

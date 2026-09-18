@@ -279,6 +279,9 @@ function setView(v) {
   state.view = v;
   $$(".views [data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
   render();
+  // The poll only refreshes issues, so the inspections somebody else added are
+  // picked up on the way into the view that shows them.
+  if (v === "recurring") reloadMeta().then(render);
 }
 
 /* ============================ render ============================ */
