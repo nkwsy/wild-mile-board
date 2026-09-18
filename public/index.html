@@ -3,404 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Wild Mile Install &amp; Maintenance Board</title>
+<title>Wild Mile Install &amp; Maintenance</title>
+<meta name="description" content="Report, assign, fix and close Wild Mile maintenance issues.">
+<meta name="theme-color" content="#2E6B5E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<style>
-/* ---------- tokens: light is the base, both themes defined here ---------- */
-:root{
-  --ground:#F1F4F0;
-  --surface:#FBFCFA;
-  --track:#E7ECE6;
-  --track-aside:#EDE9E2;
-  --line:#D2DAD1;
-  --line-strong:#B4BFB3;
-  --ink:#16211D;
-  --ink-2:#48574F;
-  --ink-3:#6D7B73;
-  --accent:#2E6B5E;
-  --accent-ink:#FFFFFF;
-  --accent-soft:#DBE7E1;
-  --accent-line:#9CBDB2;
-  --focus:#12655A;
-  --p-urgent:#A2301B; --p-urgent-bg:#F6E1DB; --p-urgent-line:#DDB0A4;
-  --p-high:#8F540E;   --p-high-bg:#F7E9D2;   --p-high-line:#DCBE8B;
-  --p-med:#28607F;    --p-med-bg:#DDE9F1;    --p-med-line:#A6C4D6;
-  --p-low:#4B5F52;    --p-low-bg:#E3E9E2;    --p-low-line:#B9C6BA;
-  --shadow-drag:0 14px 30px -10px rgba(14,32,26,.35), 0 2px 6px rgba(14,32,26,.16);
-  --r:5px;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --ground:#0D1312;
-    --surface:#171F1C;
-    --track:#121917;
-    --track-aside:#191814;
-    --line:#293430;
-    --line-strong:#3C4A44;
-    --ink:#E7EEE9;
-    --ink-2:#AAB8B1;
-    --ink-3:#7F8E86;
-    --accent:#63B8A0;
-    --accent-ink:#08120F;
-    --accent-soft:#1C302A;
-    --accent-line:#2F534A;
-    --focus:#7ACBB4;
-    --p-urgent:#F0967F; --p-urgent-bg:#391B13; --p-urgent-line:#6A3325;
-    --p-high-line:#664A20;
-    --p-med:#82BEE2;    --p-med-bg:#122A39;   --p-med-line:#254D66;
-    --p-low:#9FB4A6;    --p-low-bg:#1D2722;   --p-low-line:#35453C;
-    --shadow-drag:0 16px 34px -12px rgba(0,0,0,.7), 0 2px 8px rgba(0,0,0,.5);
-  }
-}
-:root[data-theme="dark"]{
-  --ground:#0D1312;
-  --surface:#171F1C;
-  --track:#121917;
-  --track-aside:#191814;
-  --line:#293430;
-  --line-strong:#3C4A44;
-  --ink:#E7EEE9;
-  --ink-2:#AAB8B1;
-  --ink-3:#7F8E86;
-  --accent:#63B8A0;
-  --accent-ink:#08120F;
-  --accent-soft:#1C302A;
-  --accent-line:#2F534A;
-  --focus:#7ACBB4;
-  --p-urgent:#F0967F; --p-urgent-bg:#391B13; --p-urgent-line:#6A3325;
-  --p-high:#E1AE62;   --p-high-bg:#372612;   --p-high-line:#664A20;
-  --p-med:#82BEE2;    --p-med-bg:#122A39;    --p-med-line:#254D66;
-  --p-low:#9FB4A6;    --p-low-bg:#1D2722;    --p-low-line:#35453C;
-  --shadow-drag:0 16px 34px -12px rgba(0,0,0,.7), 0 2px 8px rgba(0,0,0,.5);
-}
-
-/* ---------- base ---------- */
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0;
-  background:var(--ground);
-  color:var(--ink);
-  font-family:"Public Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
-  font-size:15px;
-  line-height:1.45;
-  -webkit-font-smoothing:antialiased;
-  display:flex;
-  flex-direction:column;
-  min-height:100dvh;
-}
-:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:3px}
-button{font:inherit;color:inherit}
-a{color:var(--accent);text-underline-offset:2px}
-
-.wrap{width:100%;max-width:1680px;margin:0 auto;padding:0 20px}
-
-/* ---------- shared-board bits: the local-copy banner ---------- */
-.banner{background:var(--track-aside);border-bottom:1px solid var(--line);
-  color:var(--ink-2);font-size:13px;padding:7px 0}
-.banner[hidden]{display:none}
-.banner b{color:var(--ink);font-weight:600}
-
-/* ---------- masthead ---------- */
-header.top{
-  border-bottom:1px solid var(--line);
-  background:var(--surface);
-  position:sticky;top:0;z-index:40;
-}
-.mast{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 24px;padding:18px 0 14px}
-h1{
-  font-family:"Bricolage Grotesque","Public Sans",sans-serif;
-  font-optical-sizing:auto;
-  font-weight:800;
-  letter-spacing:-.022em;
-  font-size:clamp(21px,2.4vw,29px);
-  line-height:1.05;
-  margin:0;
-  text-wrap:balance;
-}
-.intro{margin:0;color:var(--ink-2);font-size:14px;max-width:62ch}
-.intro code{
-  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.92em;
-  color:var(--accent);background:var(--accent-soft);
-  padding:1px 5px;border-radius:3px;
-}
-.mast-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.tally{
-  font-family:"IBM Plex Mono",ui-monospace,monospace;
-  font-size:11.5px;letter-spacing:.04em;color:var(--ink-3);
-  text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;
-}
-.tally b{color:var(--ink);font-weight:600}
-
-/* ---------- toolbar ---------- */
-.toolbar{
-  display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;
-  padding:0 0 14px;
-}
-.field{display:flex;align-items:center;gap:7px}
-.lbl{
-  font-size:10.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;
-  color:var(--ink-3);
-}
-input[type="text"],input[type="url"],input[type="date"],select,textarea{
-  font:inherit;color:var(--ink);background:var(--surface);
-  border:1px solid var(--line-strong);border-radius:var(--r);
-  padding:7px 10px;min-width:0;
-}
-input::placeholder,textarea::placeholder{color:var(--ink-3)}
-select{padding-right:26px}
-#q{width:min(260px,44vw)}
-
-.chips{display:flex;gap:5px;flex-wrap:wrap}
-.chip-btn{
-  border:1px solid var(--line-strong);background:transparent;color:var(--ink-2);
-  padding:5px 10px;border-radius:99px;cursor:pointer;
-  font-size:12px;font-weight:600;letter-spacing:.01em;
-}
-.chip-btn[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
-.chip-btn.p-urgent[aria-pressed="true"]{background:var(--p-urgent);border-color:var(--p-urgent);color:var(--surface)}
-.chip-btn.p-high[aria-pressed="true"]{background:var(--p-high);border-color:var(--p-high);color:var(--surface)}
-.chip-btn.p-medium[aria-pressed="true"]{background:var(--p-med);border-color:var(--p-med);color:var(--surface)}
-.chip-btn.p-low[aria-pressed="true"]{background:var(--p-low);border-color:var(--p-low);color:var(--surface)}
-:root[data-theme="dark"] .chip-btn[aria-pressed="true"],
-:root[data-theme="dark"] .chip-btn.p-urgent[aria-pressed="true"],
-:root[data-theme="dark"] .chip-btn.p-high[aria-pressed="true"],
-:root[data-theme="dark"] .chip-btn.p-medium[aria-pressed="true"],
-:root[data-theme="dark"] .chip-btn.p-low[aria-pressed="true"]{color:#0B1310}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]) .chip-btn[aria-pressed="true"],
-  :root:not([data-theme="light"]) .chip-btn.p-urgent[aria-pressed="true"],
-  :root:not([data-theme="light"]) .chip-btn.p-high[aria-pressed="true"],
-  :root:not([data-theme="light"]) .chip-btn.p-medium[aria-pressed="true"],
-  :root:not([data-theme="light"]) .chip-btn.p-low[aria-pressed="true"]{color:#0B1310}
-}
-.linkish{
-  background:none;border:0;padding:0;color:var(--accent);cursor:pointer;
-  font-size:12.5px;font-weight:600;text-decoration:underline;text-underline-offset:2px;
-}
-
-/* ---------- board ---------- */
-main{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
-.board-scroll{flex:1 1 auto;overflow-x:auto;overflow-y:hidden;padding:16px 0 22px}
-.board{
-  display:grid;grid-auto-flow:column;
-  grid-auto-columns:minmax(214px,1fr);
-  gap:12px;align-items:stretch;
-  min-width:min-content;height:100%;
-  padding:0 20px;
-  max-width:1680px;margin:0 auto;
-}
-@media (min-width:1100px){ .board{width:100%} }
-
-.col{
-  background:var(--track);
-  border:1px solid var(--line);
-  border-radius:8px;
-  display:flex;flex-direction:column;
-  height:100%;min-height:200px;
-}
-.col.aside{background:var(--track-aside);border-style:dashed;border-color:var(--line-strong)}
-.col-head{
-  display:flex;align-items:center;gap:8px;
-  padding:11px 12px 9px;border-bottom:1px solid var(--line);
-}
-.col-name{
-  font-family:"Bricolage Grotesque","Public Sans",sans-serif;
-  font-weight:700;font-size:13.5px;letter-spacing:.01em;
-}
-.step{
-  font-family:"IBM Plex Mono",ui-monospace,monospace;
-  font-size:10px;color:var(--ink-3);letter-spacing:.06em;
-  border:1px solid var(--line-strong);border-radius:3px;padding:1px 4px;
-}
-.count{
-  margin-left:auto;font-family:"IBM Plex Mono",ui-monospace,monospace;
-  font-size:11.5px;font-variant-numeric:tabular-nums;font-weight:600;
-  color:var(--ink-2);background:var(--surface);
-  border:1px solid var(--line);border-radius:99px;padding:1px 8px;
-}
-.count.filtered{color:var(--accent);border-color:var(--accent-line);background:var(--accent-soft)}
-.col-body{
-  flex:1 1 auto;overflow-y:auto;padding:9px;
-  display:flex;flex-direction:column;gap:9px;min-height:64px;
-}
-.col-body.dropping{background:var(--accent-soft);border-radius:0 0 7px 7px}
-.col-foot{padding:0 9px 9px}
-.addbtn{
-  width:100%;text-align:center;cursor:pointer;
-  background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:var(--r);
-  padding:8px 10px;color:var(--ink);font-size:12.5px;font-weight:700;
-  transition:background .12s ease,color .12s ease,border-color .12s ease;
-}
-.addbtn:hover{color:var(--accent-ink);border-color:var(--accent);background:var(--accent)}
-
-/* newly added / just-saved card gets a brief highlight so it is obvious where it landed */
-.card.justadded{
-  border-color:var(--accent);
-  box-shadow:0 0 0 2px var(--accent-line);
-  animation:flashcard 1.8s ease-out 1;
-}
-@keyframes flashcard{
-  0%,45%{background:var(--accent-soft)}
-  100%{background:var(--surface)}
-}
-.empty{
-  color:var(--ink-3);font-size:12.5px;font-style:italic;
-  padding:10px 4px;line-height:1.4;
-}
-
-/* ---------- card ---------- */
-.card{
-  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
-  padding:9px 10px 8px 10px;cursor:pointer;
-  display:grid;grid-template-columns:12px 1fr;column-gap:8px;row-gap:6px;
-  position:relative;
-}
-.card:hover{border-color:var(--line-strong)}
-.card.dragging{opacity:.3}
-.card.ghost{
-  position:fixed;z-index:200;pointer-events:none;cursor:grabbing;
-  box-shadow:var(--shadow-drag);border-color:var(--accent-line);
-  transform:rotate(1.1deg);margin:0;
-}
-.grip{
-  grid-row:1 / span 4;align-self:stretch;
-  touch-action:none;cursor:grab;
-  display:flex;align-items:flex-start;justify-content:center;padding-top:3px;
-  border-radius:3px;
-  color:var(--ink-3);
-}
-.grip:hover{background:var(--accent-soft);color:var(--accent)}
-.grip svg{display:block}
-.card-title{
-  font-weight:600;font-size:13.5px;line-height:1.3;letter-spacing:-.005em;
-  overflow-wrap:anywhere;
-}
-.meta{display:flex;flex-wrap:wrap;align-items:center;gap:5px 7px}
-.pchip{
-  font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
-  border-radius:3px;padding:2px 6px;border:1px solid;
-  white-space:nowrap;
-}
-.pchip.Urgent{color:var(--p-urgent);background:var(--p-urgent-bg);border-color:var(--p-urgent-line)}
-.pchip.High{color:var(--p-high);background:var(--p-high-bg);border-color:var(--p-high-line)}
-.pchip.Medium{color:var(--p-med);background:var(--p-med-bg);border-color:var(--p-med-line)}
-.pchip.Low{color:var(--p-low);background:var(--p-low-bg);border-color:var(--p-low-line)}
-.loc{
-  font-size:11.5px;color:var(--ink-2);font-weight:600;
-  overflow-wrap:anywhere;
-}
-.byline{
-  grid-column:2;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;
-  font-size:11.5px;color:var(--ink-3);
-}
-.byline .mini{margin-left:auto}
-.byline .who{color:var(--ink-2)}
-.byline .age{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10.5px;font-variant-numeric:tabular-nums}
-.src{
-  font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;gap:3px;
-}
-.card-actions{grid-column:2;display:flex;justify-content:flex-end}
-.mini{
-  border:1px solid var(--line);background:transparent;color:var(--ink-3);
-  border-radius:3px;padding:1px 6px;font-size:10.5px;font-weight:700;cursor:pointer;
-  letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;
-}
-.mini:hover{border-color:var(--accent-line);color:var(--accent);background:var(--accent-soft)}
-.movemenu{
-  position:absolute;z-index:60;left:10px;right:10px;top:100%;margin-top:4px;
-  background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;
-  box-shadow:var(--shadow-drag);padding:5px;display:flex;flex-direction:column;gap:2px;
-}
-.movemenu .mm-lbl{
-  font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--ink-3);padding:3px 7px 4px;
-}
-.movemenu button{
-  text-align:left;background:transparent;border:0;border-radius:4px;
-  padding:6px 8px;font-size:12.5px;cursor:pointer;color:var(--ink);
-}
-.movemenu button:hover:not(:disabled){background:var(--accent-soft);color:var(--accent)}
-.movemenu button:disabled{color:var(--ink-3);cursor:default;font-style:italic}
-.placeholder{
-  border:1px dashed var(--accent-line);background:var(--accent-soft);
-  border-radius:var(--r);flex:0 0 auto;
-}
-
-/* ---------- drawer ---------- */
-dialog.drawer{
-  border:0;padding:0;background:transparent;color:var(--ink);
-  max-width:none;max-height:none;width:100%;height:100%;
-  margin:0;inset:0;
-}
-dialog.drawer::backdrop{background:rgba(10,20,17,.44);backdrop-filter:blur(1.5px)}
-.drawer-inner{
-  position:absolute;top:0;right:0;height:100%;
-  width:min(430px,100%);
-  background:var(--surface);border-left:1px solid var(--line-strong);
-  display:flex;flex-direction:column;
-}
-@media (max-width:520px){ .drawer-inner{width:100%;border-left:0} }
-.drawer-head{
-  display:flex;align-items:center;gap:10px;padding:14px 16px;
-  border-bottom:1px solid var(--line);
-}
-.drawer-head h2{
-  font-family:"Bricolage Grotesque","Public Sans",sans-serif;
-  font-size:16px;font-weight:700;margin:0;letter-spacing:-.01em;
-}
-.xbtn{
-  margin-left:auto;border:1px solid var(--line-strong);background:transparent;
-  border-radius:var(--r);width:30px;height:30px;cursor:pointer;line-height:1;
-  color:var(--ink-2);font-size:16px;
-}
-.xbtn:hover{color:var(--accent);border-color:var(--accent-line)}
-.drawer-body{overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:13px;flex:1 1 auto}
-.f{display:flex;flex-direction:column;gap:5px}
-.f label{font-size:10.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3)}
-.f input,.f select,.f textarea{width:100%}
-.f textarea{min-height:78px;resize:vertical;line-height:1.45;font-family:inherit}
-.f2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.hint{font-size:11.5px;color:var(--ink-3)}
-.drawer-foot{
-  display:flex;gap:9px;align-items:center;padding:13px 16px;
-  border-top:1px solid var(--line);background:var(--surface);
-}
-.btn{
-  border:1px solid var(--line-strong);background:transparent;border-radius:var(--r);
-  padding:8px 14px;font-size:13.5px;font-weight:600;cursor:pointer;
-}
-.btn:hover{border-color:var(--ink-3)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.btn.primary:hover{filter:brightness(1.07)}
-.btn.danger{margin-left:auto;color:var(--p-urgent);border-color:var(--p-urgent-line)}
-.btn.danger:hover{background:var(--p-urgent-bg)}
-
-/* ---------- footer ---------- */
-footer{
-  border-top:1px solid var(--line);background:var(--surface);
-  padding:11px 0 14px;
-}
-.foot-row{
-  display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;
-  font-size:11.5px;color:var(--ink-3);
-}
-.mode{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--ink-2)}
-.dot{width:7px;height:7px;border-radius:99px;background:var(--ink-3);flex:0 0 auto}
-.dot.on{background:var(--accent)}
-.legend{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
-
-.sr{
-  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
-  clip:rect(0 0 0 0);white-space:nowrap;border:0;
-}
-@media (prefers-reduced-motion:reduce){
-  *{animation-duration:.001ms !important;transition-duration:.001ms !important}
-  .card.ghost{transform:none}
-}
-</style>
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
 
@@ -408,717 +17,276 @@ footer{
   <div class="wrap">
     <div class="mast">
       <div>
-        <h1>Wild Mile Install &amp; Maintenance Board</h1>
-        <p class="intro">Issues reported in <code>#install--maintenance</code>, dragged left to right as they get handled.</p>
+        <h1>Wild Mile Install &amp; Maintenance</h1>
+        <p class="intro">Report it from the boardwalk, assign it, close it, and keep the photos on the record.</p>
       </div>
       <div class="mast-right">
         <div class="tally" id="tally"></div>
-        <button type="button" class="btn primary" id="hdradd">+ Add issue</button>
+        <div class="views" role="group" aria-label="View">
+          <button type="button" data-view="board" aria-pressed="true">Board</button>
+          <button type="button" data-view="list" aria-pressed="false">List</button>
+          <button type="button" data-view="recurring" aria-pressed="false">Inspections</button>
+        </div>
+        <button type="button" class="btn primary desktop-report" id="report-open">+ Report an issue</button>
       </div>
     </div>
     <div class="toolbar">
       <div class="field">
         <label class="lbl" for="q">Search</label>
-        <input type="text" id="q" placeholder="title, note, reporter, place">
+        <input type="search" id="q" placeholder="title, note, reporter, place">
       </div>
       <div class="field">
-        <span class="lbl" id="prio-lbl">Priority</span>
-        <div class="chips" role="group" aria-labelledby="prio-lbl" id="prio-chips"></div>
+        <span class="lbl" id="sev-lbl">Severity</span>
+        <div class="chips" role="group" aria-labelledby="sev-lbl" id="sev-chips"></div>
       </div>
       <div class="field">
         <label class="lbl" for="locsel">Location</label>
         <select id="locsel"><option value="">All locations</option></select>
       </div>
+      <div class="field">
+        <label class="lbl" for="asgsel">Assignee</label>
+        <select id="asgsel"><option value="">Anyone</option></select>
+      </div>
+      <div class="field">
+        <label class="lbl" for="scopesel">Show</label>
+        <select id="scopesel">
+          <option value="open">Open</option>
+          <option value="all">Open and closed</option>
+          <option value="closed">Closed</option>
+        </select>
+      </div>
       <button class="linkish" id="clearf" hidden>Clear filters</button>
+      <a class="linkish" id="csv" href="/api/export" download>Export CSV</a>
     </div>
   </div>
 </header>
 
+<div class="stale" id="stale" hidden>
+  <div class="wrap">
+    <span id="stale-text"></span>
+    <button type="button" class="btn small" id="stale-show">Show them</button>
+  </div>
+</div>
+
 <div class="banner" id="banner" hidden>
-  <div class="wrap"><b>Local copy — not shared.</b> This page can't reach the board server, so changes stay in this browser.</div>
+  <div class="wrap"><b>Can't reach the board server.</b> <span id="banner-why"></span></div>
 </div>
 
 <main>
   <div class="board-scroll" id="scroller">
     <div class="board" id="board"></div>
   </div>
+
+  <div class="wrap listwrap" id="listview" hidden>
+    <table class="issues">
+      <thead>
+        <tr>
+          <th class="rowsel"><input type="checkbox" id="selall" aria-label="Select every issue shown"></th>
+          <th class="sortable" data-sort="title">Issue</th>
+          <th class="sortable" data-sort="severity">Severity</th>
+          <th class="sortable" data-sort="status">Status</th>
+          <th class="sortable" data-sort="location">Location</th>
+          <th class="sortable" data-sort="assignee">Assignee</th>
+          <th class="sortable" data-sort="dueOn">Due</th>
+          <th class="sortable" data-sort="touchedAt">Untouched</th>
+        </tr>
+      </thead>
+      <tbody id="listbody"></tbody>
+    </table>
+    <p class="hint" id="listnote"></p>
+  </div>
+
+  <div class="wrap panel" id="recurringview" hidden>
+    <div class="toolbar">
+      <button type="button" class="btn primary" id="gen-run">Generate the next 60 days</button>
+      <button type="button" class="btn" id="tpl-new">+ New inspection</button>
+      <span class="hint" id="gen-note">Nothing appears on the board until you press this.</span>
+    </div>
+    <div class="tpl-grid" id="tpl-grid"></div>
+  </div>
 </main>
+
+<button type="button" class="fab" id="fab">+ Report</button>
 
 <footer>
   <div class="wrap foot-row">
-    <span class="mode"><span class="dot" id="modedot"></span><span id="modetext">Loading board&hellip;</span></span>
+    <span class="mode"><span class="dot" id="modedot"></span><span id="modetext">Loading&hellip;</span></span>
     <span id="modenote"></span>
     <span class="legend" aria-hidden="true">
-      <span class="pchip Urgent">Urgent</span><span class="pchip High">High</span><span class="pchip Medium">Medium</span><span class="pchip Low">Low</span>
+      <span class="schip sev-urgent">Urgent!</span>
+      <span class="schip sev-important">Important</span>
+      <span class="schip sev-eyes">Keep eyes on</span>
     </span>
   </div>
 </footer>
 
-<dialog class="drawer" id="drawer" aria-labelledby="dtitle">
+<!-- ============ the report sheet: photo, one sentence, where. ============ -->
+<dialog id="report" aria-labelledby="report-title">
+  <form class="sheet" id="report-form" method="dialog">
+    <div class="sheet-head">
+      <h2 id="report-title">What's wrong?</h2>
+      <button type="button" class="xbtn" id="report-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="sheet-body">
+      <input type="file" id="shot-input" accept="image/*" capture="environment" multiple hidden>
+      <button type="button" class="shot" id="shot-btn">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+          <circle cx="12" cy="13" r="4"></circle>
+        </svg>
+        <span id="shot-label">Take a photo</span>
+      </button>
+      <div class="shots" id="shots"></div>
+
+      <div>
+        <label class="step-lbl" for="say">In a sentence</label>
+        <textarea id="say" maxlength="160" required
+          placeholder="Board near the second gathering nook is cracked"></textarea>
+      </div>
+
+      <div>
+        <span class="step-lbl" id="where-lbl">Where <span class="opt">— tap one or type it</span></span>
+        <div class="pickrow" id="where-picks" role="group" aria-labelledby="where-lbl"></div>
+        <input type="text" id="where-free" list="loclist" maxlength="160" placeholder="somewhere else&hellip;"
+          aria-label="Somewhere not in the list" style="margin-top:8px;width:100%">
+        <datalist id="loclist"></datalist>
+      </div>
+
+      <div>
+        <span class="step-lbl" id="sev-pick-lbl">How bad <span class="opt">— Important unless you say otherwise</span></span>
+        <div class="pickrow" id="sev-picks" role="group" aria-labelledby="sev-pick-lbl"></div>
+      </div>
+
+      <button type="button" class="pick more" id="more-toggle" aria-expanded="false">More detail&hellip;</button>
+      <div class="optional" id="more" hidden>
+        <div class="f">
+          <label for="who">Your name</label>
+          <input type="text" id="who" maxlength="80" list="peoplelist" placeholder="so somebody can ask you about it">
+          <datalist id="peoplelist"></datalist>
+        </div>
+        <div class="f">
+          <label for="detail">Anything else</label>
+          <textarea id="detail" maxlength="4000" placeholder="what it will take to fix, what you already tried"></textarea>
+        </div>
+        <div class="f2">
+          <div class="f">
+            <label for="due">Needed by</label>
+            <input type="date" id="due">
+          </div>
+          <div class="f">
+            <label for="due-why">Because</label>
+            <input type="text" id="due-why" maxlength="200" placeholder="city tour, block party&hellip;">
+          </div>
+        </div>
+      </div>
+      <p class="hint" id="report-hint"></p>
+    </div>
+    <div class="sheet-foot">
+      <button type="submit" class="btn primary" id="report-send">Send it</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ the issue itself ============ -->
+<dialog id="drawer" aria-labelledby="dtitle">
   <div class="drawer-inner">
     <div class="drawer-head">
       <h2 id="dtitle">Issue</h2>
-      <button class="xbtn" id="dclose" aria-label="Close panel">&times;</button>
+      <button type="button" class="xbtn" id="dclose" aria-label="Close panel">&times;</button>
     </div>
-    <form method="dialog" id="dform">
-      <div class="drawer-body">
-        <div class="f">
-          <label for="f-title">Title</label>
-          <input type="text" id="f-title" required maxlength="140" placeholder="What is broken?">
-        </div>
-        <div class="f">
-          <label for="f-desc">Description</label>
-          <textarea id="f-desc" maxlength="1200" placeholder="What was seen, and what it will take to fix."></textarea>
-        </div>
-        <div class="f2">
-          <div class="f">
-            <label for="f-reporter">Reporter</label>
-            <input type="text" id="f-reporter" maxlength="80" placeholder="Who saw it">
-          </div>
-          <div class="f">
-            <label for="f-loc">Location</label>
-            <input type="text" id="f-loc" maxlength="80" list="loclist" placeholder="Where on site">
-            <datalist id="loclist"></datalist>
-          </div>
-        </div>
-        <div class="f2">
-          <div class="f">
-            <label for="f-prio">Priority</label>
-            <select id="f-prio">
-              <option>Low</option><option>Medium</option><option>High</option><option>Urgent</option>
-            </select>
-          </div>
-          <div class="f">
-            <label for="f-col">Column</label>
-            <select id="f-col"></select>
-          </div>
-        </div>
-        <div class="f2">
-          <div class="f">
-            <label for="f-date">Reported</label>
-            <input type="date" id="f-date">
-          </div>
-          <div class="f">
-            <label for="f-link">Source link</label>
-            <input type="url" id="f-link" placeholder="https://">
-          </div>
-        </div>
-        <p class="hint" id="f-hint"></p>
-      </div>
-      <div class="drawer-foot">
-        <button type="submit" class="btn primary" id="dsave" value="save">Save</button>
-        <button type="button" class="btn" id="dcancel">Cancel</button>
-        <button type="button" class="btn danger" id="ddelete">Delete</button>
-      </div>
-    </form>
+    <div class="drawer-body" id="dbody"></div>
+    <div class="drawer-foot" id="dfoot"></div>
   </div>
 </dialog>
 
+<!-- ============ closing a pile needs a sentence ============ -->
+<dialog id="bulk" aria-labelledby="bulk-title">
+  <form class="sheet" id="bulk-form" method="dialog">
+    <div class="sheet-head">
+      <h2 id="bulk-title">Close these?</h2>
+      <button type="button" class="xbtn" id="bulk-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="sheet-body">
+      <p class="hint" id="bulk-what"></p>
+      <div class="f">
+        <label for="bulk-reason">Why are these going at once?</label>
+        <textarea id="bulk-reason" maxlength="400"
+          placeholder="Fixed on the October workday and never marked"></textarea>
+        <p class="hint" id="bulk-hint"></p>
+      </div>
+      <div class="f">
+        <label for="bulk-actor">Your name</label>
+        <input type="text" id="bulk-actor" maxlength="80" list="peoplelist">
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button type="submit" class="btn primary" id="bulk-go">Close them</button>
+      <button type="button" class="btn ghost" id="bulk-cancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ a recurring inspection ============ -->
+<dialog id="tpl" aria-labelledby="tpl-title">
+  <form class="sheet" id="tpl-form" method="dialog">
+    <div class="sheet-head">
+      <h2 id="tpl-title">Recurring inspection</h2>
+      <button type="button" class="xbtn" id="tpl-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="sheet-body">
+      <div class="f">
+        <label for="tpl-name">What gets done</label>
+        <input type="text" id="tpl-name" maxlength="160" required placeholder="Hardware check-up">
+      </div>
+      <div class="f">
+        <label for="tpl-descr">How</label>
+        <textarea id="tpl-descr" maxlength="2000"></textarea>
+      </div>
+      <div class="f2">
+        <div class="f">
+          <label for="tpl-loc">Where</label>
+          <input type="text" id="tpl-loc" maxlength="160" list="loclist">
+        </div>
+        <div class="f">
+          <label for="tpl-sev">Severity</label>
+          <select id="tpl-sev"></select>
+        </div>
+      </div>
+      <div class="f">
+        <label for="tpl-cadence">How often</label>
+        <select id="tpl-cadence">
+          <option value="every_days">Every so many days, inside a season</option>
+          <option value="on_dates">On fixed dates, every year</option>
+        </select>
+      </div>
+      <div class="f2" id="tpl-every">
+        <div class="f">
+          <label for="tpl-interval">Every (days)</label>
+          <input type="number" id="tpl-interval" min="1" max="365" value="14">
+        </div>
+        <div class="f">
+          <label for="tpl-season">Season (MM-DD to MM-DD)</label>
+          <div class="f2">
+            <input type="text" id="tpl-season-start" maxlength="5" placeholder="04-01">
+            <input type="text" id="tpl-season-end" maxlength="5" placeholder="11-15">
+          </div>
+        </div>
+      </div>
+      <div class="f" id="tpl-dates" hidden>
+        <label for="tpl-monthdays">Dates, comma separated (MM-DD)</label>
+        <input type="text" id="tpl-monthdays" maxlength="200" placeholder="06-15,07-05">
+      </div>
+      <p class="hint" id="tpl-hint"></p>
+    </div>
+    <div class="sheet-foot">
+      <button type="submit" class="btn primary" id="tpl-save">Save</button>
+      <button type="button" class="btn ghost" id="tpl-delete" hidden>Delete</button>
+    </div>
+  </form>
+</dialog>
+
 <div class="sr" role="status" aria-live="polite" id="live"></div>
-
-<script>
-"use strict";
-/* ============================ board definition ============================ */
-const COLS = [
-  {id:"new",       name:"New",                  step:"1"},
-  {id:"triaged",   name:"Triaged",              step:"2"},
-  {id:"scheduled", name:"Scheduled",            step:"3"},
-  {id:"progress",  name:"In Progress",          step:"4"},
-  {id:"done",      name:"Done",                 step:"5"},
-  {id:"blocked",   name:"Blocked / Needs Info", step:"—", aside:true}
-];
-const COLIDS = COLS.map(c=>c.id);
-const PRIOS = ["Urgent","High","Medium","Low"];
-const PRIO_RANK = {Urgent:0, High:1, Medium:2, Low:3};
-
-/* Seed issues pulled from #install--maintenance. Written to the shared store
-   once, on first open; after that the store is the record. */
-const SEEDS = [
-  {id:"tr-ramp",    col:"new", title:"Transition ramp fell in",
-   reporter:"Nick Wesley", loc:"Wild Mile", prio:"High", date:"2026-04-04",
-   desc:"Photo in Slack; couldn't file via the bug form.", link:""},
-  {id:"eink-plug",  col:"new", title:"Eink power plug is not accessible",
-   reporter:"Nick Wesley", loc:"Wild Mile", prio:"Medium", date:"2026-06-29",
-   desc:"", link:""},
-  {id:"geese",      col:"new", title:"Geese nesting in wake barriers",
-   reporter:"Maya Kelly", loc:"Wake barriers", prio:"Medium", date:"2026-04-09",
-   desc:"Geese are pulling wake barrier material for nests.", link:""},
-  {id:"deck-board", col:"new", title:"Cracked, bouncy deck board near second gathering nook",
-   reporter:"Maya Kelly", loc:"Second gathering nook", prio:"High", date:"2025-07-18",
-   desc:"Feels bouncy underfoot; expected to break.", link:""},
-  {id:"natgeo",     col:"new", title:"Nat Geo island hanging on its anchors",
-   reporter:"Phil Nicodemus", loc:"Nat Geo island", prio:"High", date:"2025-10-28",
-   desc:"", link:""},
-  {id:"north-old",  col:"new", title:"Furthest north old islands jacked up",
-   reporter:"Phil Nicodemus", loc:"North old islands", prio:"Medium", date:"2025-10-28",
-   desc:"", link:""},
-  {id:"dropped-eq", col:"new", title:"Possible dropped equipment in river",
-   reporter:"Phil Nicodemus", loc:"Wild Mile", prio:"Low", date:"2025-10-28",
-   desc:"“We might have dropped this” — needs ID and retrieval.", link:""},
-  {id:"fence",      col:"new", title:"Fence broken, needs ring gunning",
-   reporter:"Sage Rossman", loc:"Fence", prio:"Low", date:"2024-10-23",
-   desc:"", link:""},
-  {id:"van-steer",  col:"new", title:"Van steering column leaking water",
-   reporter:"Stephen Meyer", loc:"Van", prio:"Medium", date:"2025-09-13",
-   desc:"Water comes out of the steering column when turning the wheel. Not install/maintenance proper.", link:""},
-  {id:"prologis",   col:"scheduled", title:"Prologis fix needed before city tour",
-   reporter:"Nick Wesley", loc:"Prologis", prio:"Urgent", date:"2026-06-02",
-   desc:"City tour of Prologis was July 23; confirm whether still outstanding.", link:""},
-  {id:"bugform",    col:"triaged", title:"Open bug-form submissions (Slack list)",
-   reporter:"Issue submission form", loc:"Various", prio:"Medium", date:"",
-   desc:"About a dozen submissions live in the Slack bug list; titles aren't readable from the channel feed, so copy them onto the board as they get triaged.",
-   link:"https://urbanrivers.slack.com/lists/T049JE18R/F0839EZG03H"}
-];
-
-/* ============================ state ============================ */
-const LS_KEY = "wildmile.board.v1";
-const POLL_MS = 5000;
-let cards = new Map();          // id -> card
-let mode = "loading";           // "loading" | "shared" | "local"
-let filters = {q:"", prios:new Set(), loc:""};
-let pollTimer = null;
-let inflight = 0;               // writes in the air; polling waits for them
-let lastSig = "";               // last server payload we rendered
-
-const EMPTY = {
-  new:"Nothing new reported. Post in the channel and add it here.",
-  triaged:"Nothing waiting on a decision.",
-  scheduled:"Nothing on a work day yet.",
-  progress:"No crew out on a fix right now.",
-  done:"Fixes land here once they’re back in service.",
-  blocked:"Nothing stalled. Park anything waiting on a part, a permit or an answer here."
-};
-const $ = s => document.querySelector(s);
-const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const say = m => { $("#live").textContent = m; };
-
-function normalize(o, i){
-  return {
-    id: String(o.id),
-    title: String(o.title||"Untitled issue"),
-    desc: String(o.desc||""),
-    reporter: String(o.reporter||""),
-    loc: String(o.loc||""),
-    prio: PRIOS.includes(o.prio) ? o.prio : "Medium",
-    date: String(o.date||""),
-    link: String(o.link||""),
-    col: COLIDS.includes(o.col) ? o.col : "new",
-    ord: typeof o.ord === "number" ? o.ord : (i+1)*1000
-  };
-}
-function seedMap(){
-  const m = new Map();
-  const per = {};
-  SEEDS.forEach(s => {
-    per[s.col] = (per[s.col]||0) + 1;
-    m.set(s.id, normalize({...s, ord: per[s.col]*1000}));
-  });
-  return m;
-}
-
-/* ============================ persistence ============================ */
-function localLoad(){
-  try{
-    const raw = localStorage.getItem(LS_KEY);
-    if(!raw) return null;
-    const arr = JSON.parse(raw);
-    if(!Array.isArray(arr) || !arr.length) return null;
-    const m = new Map();
-    arr.forEach((o,i) => { if(o && o.id) m.set(String(o.id), normalize(o,i)); });
-    return m.size ? m : null;
-  }catch(e){ return null; }
-}
-function localSave(){
-  try{ localStorage.setItem(LS_KEY, JSON.stringify([...cards.values()])); }
-  catch(e){ /* private mode / full quota: the session still works in memory */ }
-}
-
-/* ---- the shared store is the /api/cards endpoints; fetch does the talking ---- */
-async function api(method, path, body){
-  const res = await fetch(path, {
-    method,
-    headers: body ? {"Content-Type":"application/json"} : undefined,
-    body: body ? JSON.stringify(body) : undefined
-  });
-  if(!res.ok){ const e = new Error("api " + res.status); e.status = res.status; throw e; }
-  return res.json();
-}
-const cardURL = id => "/api/cards?id=" + encodeURIComponent(id);
-const toDoc = c => ({id:c.id, title:c.title, desc:c.desc, reporter:c.reporter, loc:c.loc,
-                     prio:c.prio, date:c.date, link:c.link, col:c.col, ord:c.ord});
-
-/* Send one write. The screen already shows it, so a failure just says so and
-   drops lastSig, which makes the next poll pull the server's version back. */
-async function push(run, trouble){
-  inflight++;
-  try{ await run(); }
-  catch(e){
-    lastSig = "";
-    say(trouble);
-  }
-  finally{ inflight--; }
-}
-
-async function persist(card){                       // create or update one card
-  const isNew = !cards.has(card.id);
-  cards.set(card.id, card);
-  render();
-  if(mode !== "shared"){ localSave(); return; }
-  await push(() => isNew ? api("POST", "/api/cards", toDoc(card))
-                         : api("PATCH", cardURL(card.id), toDoc(card)),
-             "Couldn't save that change to the shared board.");
-}
-async function persistDelete(id){
-  cards.delete(id);
-  render();
-  if(mode !== "shared"){ localSave(); return; }
-  await push(() => api("DELETE", cardURL(id)), "Couldn't delete that card on the shared board.");
-}
-
-/* ---- opening the board: server first, this browser only as a fallback ---- */
-async function connect(){
-  try{
-    adopt(await api("GET", "/api/cards"));
-    setMode("shared");
-    startPolling();
-  }catch(e){
-    goLocal();                                      // opened as a file, or served without the API
-  }
-}
-function adopt(payload){
-  const sig = JSON.stringify(payload.cards);
-  if(sig === lastSig) return;                       // nothing moved; leave the DOM alone
-  lastSig = sig;
-  const m = new Map();
-  payload.cards.forEach((o,i) => { if(o && o.id) m.set(String(o.id), normalize(o,i)); });
-  cards = m;
-  render();
-}
-function goLocal(){
-  cards = localLoad() || seedMap();
-  setMode("local");
-  render();
-}
-
-function startPolling(){
-  if(!pollTimer) pollTimer = setInterval(poll, POLL_MS);
-}
-
-/* Pick up other people's changes. Anything the user has hold of right now —
-   a card mid-drag, the open editor, an open move menu, a write still in the
-   air — means we skip this tick rather than redraw underneath them. */
-async function poll(){
-  if(mode !== "shared") return;
-  if(drag || inflight || drawer.open || document.querySelector(".movemenu")) return;
-  try{ adopt(await api("GET", "/api/cards")); }
-  catch(e){ /* a blip; the next tick tries again */ }
-}
-
-document.addEventListener("visibilitychange", () => { if(!document.hidden) poll(); });
-
-function setMode(m){
-  mode = m;
-  const shared = m === "shared";
-  $("#modedot").classList.toggle("on", shared);
-  $("#modetext").textContent = shared ? "Shared board" : "This browser only";
-  $("#modenote").textContent = shared
-    ? "Cards, moves and edits are saved for everyone who opens this page."
-    : "Changes save locally in this browser only \u2014 other people won't see them.";
-  $("#banner").hidden = m !== "local";
-}
-
-/* ============================ rendering ============================ */
-function byCol(){
-  const g = {};
-  COLIDS.forEach(id => g[id] = []);
-  [...cards.values()].forEach(c => (g[c.col] || g.new).push(c));
-  COLIDS.forEach(id => g[id].sort((a,b) => a.ord - b.ord || PRIO_RANK[a.prio]-PRIO_RANK[b.prio]));
-  return g;
-}
-function matches(c){
-  if(filters.prios.size && !filters.prios.has(c.prio)) return false;
-  if(filters.loc && c.loc !== filters.loc) return false;
-  if(filters.q){
-    const hay = (c.title+" "+c.desc+" "+c.reporter+" "+c.loc).toLowerCase();
-    if(!hay.includes(filters.q)) return false;
-  }
-  return true;
-}
-function daysOpen(date){
-  if(!date) return "";
-  const t = Date.parse(date + "T12:00:00Z");
-  if(isNaN(t)) return "";
-  const d = Math.max(0, Math.round((Date.now()-t)/86400000));
-  return d < 1 ? "today" : d + "d open";
-}
-const GRIP = '<svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true" focusable="false">'
-  + [2,7,12].map(y=>'<circle cx="2.5" cy="'+y+'" r="1.35" fill="currentColor"/><circle cx="7.5" cy="'+y+'" r="1.35" fill="currentColor"/>').join('')
-  + '</svg>';
-
-function cardHTML(c){
-  const age = daysOpen(c.date);
-  const bits = [];
-  if(c.reporter) bits.push('<span class="who">'+esc(c.reporter)+'</span>');
-  if(c.date) bits.push('<span>'+esc(c.date)+'</span>');
-  if(age) bits.push('<span class="age">'+esc(age)+'</span>');
-  if(c.link) bits.push('<a class="src" href="'+esc(c.link)+'" target="_blank" rel="noopener noreferrer">Source ↗</a>');
-  const colName = COLS.find(x=>x.id===c.col).name;
-  const moveBtn = '<button type="button" class="mini" data-move aria-haspopup="true"'
-    + ' aria-expanded="false" aria-label="'+esc("Move "+c.title+" to another column")+'">Move &rsaquo;</button>';
-  return '<article class="card" tabindex="0" data-id="'+esc(c.id)+'"'
-    + ' aria-label="'+esc(c.title+". "+c.prio+" priority, "+(c.loc||"no location")+", "+colName+". Open to edit.")+'">'
-    + '<span class="grip" data-grip aria-hidden="true" title="Drag to another column">'+GRIP+'</span>'
-    + '<h3 class="card-title">'+esc(c.title)+'</h3>'
-    + '<div class="meta"><span class="pchip '+esc(c.prio)+'">'+esc(c.prio)+'</span>'
-    + (c.loc ? '<span class="loc">'+esc(c.loc)+'</span>' : '')+'</div>'
-    + (bits.length
-        ? '<div class="byline">'+bits.join('')+moveBtn+'</div>'
-        : '<div class="card-actions">'+moveBtn+'</div>')
-    + '</article>';
-}
-
-function render(){
-  const g = byCol();
-  const board = $("#board");
-  const active = document.activeElement;
-  const keepId = active && active.classList && active.classList.contains("card") ? active.dataset.id : null;
-
-  board.innerHTML = COLS.map(col => {
-    const all = g[col.id];
-    const shown = all.filter(matches);
-    const hidden = all.length - shown.length;
-    const badge = hidden
-      ? '<span class="count filtered" title="'+hidden+' hidden by filters">'+shown.length+'/'+all.length+'</span>'
-      : '<span class="count">'+all.length+'</span>';
-    const body = shown.length
-      ? shown.map(cardHTML).join("")
-      : '<p class="empty">'+(all.length ? "Nothing here matches the filters."
-          : EMPTY[col.id])+'</p>';
-    return '<section class="col'+(col.aside?" aside":"")+'" data-col="'+col.id+'" aria-label="'+esc(col.name)+'">'
-      + '<div class="col-head"><span class="step">'+esc(col.step)+'</span>'
-      + '<span class="col-name">'+esc(col.name)+'</span>'+badge+'</div>'
-      + '<div class="col-body" data-body="'+col.id+'">'+body+'</div>'
-      + '<div class="col-foot"><button type="button" class="addbtn" data-add="'+col.id+'">+ Add issue</button></div>'
-      + '</section>';
-  }).join("");
-
-  if(keepId){
-    const el = board.querySelector('.card[data-id="'+CSS.escape(keepId)+'"]');
-    if(el) el.focus({preventScroll:true});
-  }
-  renderTally(g);
-  refreshLocations();
-}
-
-function renderTally(g){
-  const all = [...cards.values()];
-  const open = all.filter(c => c.col !== "done").length;
-  const hot = all.filter(c => c.col !== "done" && (c.prio==="Urgent"||c.prio==="High")).length;
-  $("#tally").innerHTML = '<b>'+open+'</b> open · <b>'+hot+'</b> high or urgent · <b>'+g.done.length+'</b> done';
-}
-
-let knownLocs = [];
-function refreshLocations(){
-  const locs = [...new Set([...cards.values()].map(c=>c.loc).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-  if(locs.join("|") === knownLocs.join("|")) return;
-  knownLocs = locs;
-  const sel = $("#locsel");
-  sel.innerHTML = '<option value="">All locations</option>'
-    + locs.map(l => '<option'+(l===filters.loc?" selected":"")+'>'+esc(l)+'</option>').join("");
-  $("#loclist").innerHTML = locs.map(l => '<option value="'+esc(l)+'"></option>').join("");
-}
-
-/* ============================ filters ============================ */
-$("#prio-chips").innerHTML = PRIOS.map(p =>
-  '<button type="button" class="chip-btn p-'+p.toLowerCase()+'" data-prio="'+p+'" aria-pressed="false">'+p+'</button>').join("");
-$("#prio-chips").addEventListener("click", e => {
-  const b = e.target.closest("[data-prio]"); if(!b) return;
-  const p = b.dataset.prio;
-  filters.prios.has(p) ? filters.prios.delete(p) : filters.prios.add(p);
-  b.setAttribute("aria-pressed", filters.prios.has(p) ? "true" : "false");
-  afterFilter();
-});
-$("#q").addEventListener("input", e => { filters.q = e.target.value.trim().toLowerCase(); afterFilter(); });
-$("#locsel").addEventListener("change", e => { filters.loc = e.target.value; afterFilter(); });
-function filtersActive(){ return !!(filters.q || filters.loc || filters.prios.size); }
-function resetFilters(){                            // clears the UI controls too, so screen == state
-  filters = {q:"", prios:new Set(), loc:""};
-  $("#q").value = ""; $("#locsel").value = "";
-  $("#prio-chips").querySelectorAll("[data-prio]").forEach(b => b.setAttribute("aria-pressed","false"));
-}
-$("#clearf").addEventListener("click", () => { resetFilters(); afterFilter(); });
-function afterFilter(){
-  $("#clearf").hidden = !filtersActive();
-  render();
-}
-
-/* Scroll a card into view and flash it. Called after render() so the node exists. */
-function spotlight(id){
-  const el = $("#board").querySelector('.card[data-id="'+CSS.escape(id)+'"]');
-  if(!el) return;
-  el.classList.add("justadded");
-  try{ el.scrollIntoView({block:"nearest", inline:"nearest", behavior:"smooth"}); }
-  catch(e){ el.scrollIntoView(); }
-  setTimeout(() => el.classList.remove("justadded"), 2200);
-}
-
-/* ============================ card interaction ============================ */
-const board = $("#board");
-
-board.addEventListener("click", e => {
-  const add = e.target.closest("[data-add]");
-  if(add){ openDrawer(null, add.dataset.add); return; }
-  const mv = e.target.closest("[data-move]");
-  if(mv){ e.stopPropagation(); toggleMoveMenu(mv.closest(".card")); return; }
-  if(e.target.closest(".movemenu")) return;
-  if(e.target.closest("a")) return;
-  if(e.target.closest(".grip")) return;
-  const card = e.target.closest(".card");
-  if(card && !dragMoved) openDrawer(card.dataset.id);
-});
-board.addEventListener("keydown", e => {
-  const card = e.target.closest(".card");
-  if(!card) return;
-  const c = cards.get(card.dataset.id);
-  if(!c) return;
-  if(e.key === "Enter" || e.key === " "){
-    if(e.target !== card) return;
-    e.preventDefault(); openDrawer(c.id); return;
-  }
-  if(!(e.ctrlKey || e.metaKey)) return;
-  const i = COLIDS.indexOf(c.col);
-  if(e.key === "ArrowRight" && i < COLIDS.length-1){ e.preventDefault(); moveToColumn(c.id, COLIDS[i+1]); }
-  else if(e.key === "ArrowLeft" && i > 0){ e.preventDefault(); moveToColumn(c.id, COLIDS[i-1]); }
-  else if(e.key === "ArrowUp" || e.key === "ArrowDown"){ e.preventDefault(); nudge(c, e.key === "ArrowUp" ? -1 : 1); }
-});
-document.addEventListener("click", e => {
-  if(!e.target.closest(".movemenu") && !e.target.closest("[data-move]")) closeMoveMenu();
-});
-
-function closeMoveMenu(){
-  document.querySelectorAll(".movemenu").forEach(m => m.remove());
-  document.querySelectorAll("[data-move]").forEach(b => b.setAttribute("aria-expanded","false"));
-}
-function toggleMoveMenu(card){
-  const open = card.querySelector(".movemenu");
-  closeMoveMenu();
-  if(open) return;
-  const c = cards.get(card.dataset.id); if(!c) return;
-  const menu = document.createElement("div");
-  menu.className = "movemenu";
-  menu.innerHTML = '<span class="mm-lbl">Move to</span>' + COLS.map(col =>
-    '<button type="button" data-to="'+col.id+'"'+(col.id===c.col?' disabled':'')+'>'
-    + esc(col.name) + (col.id===c.col ? " · here now" : "") + '</button>').join("");
-  card.appendChild(menu);
-  card.querySelector("[data-move]").setAttribute("aria-expanded","true");
-  menu.addEventListener("click", ev => {
-    const b = ev.target.closest("[data-to]"); if(!b || b.disabled) return;
-    ev.stopPropagation();
-    closeMoveMenu();
-    moveToColumn(c.id, b.dataset.to);
-  });
-  const first = menu.querySelector("button:not(:disabled)"); if(first) first.focus();
-  menu.addEventListener("keydown", ev => {
-    if(ev.key === "Escape"){ ev.stopPropagation(); closeMoveMenu(); card.focus(); }
-  });
-}
-function endOrd(colId){
-  const inCol = [...cards.values()].filter(c => c.col === colId);
-  return inCol.length ? Math.max(...inCol.map(c => c.ord)) + 1000 : 1000;
-}
-function moveToColumn(id, colId){
-  const c = cards.get(id); if(!c || c.col === colId) return;
-  const moved = {...c, col:colId, ord:endOrd(colId)};
-  persist(moved);
-  say(c.title + " moved to " + COLS.find(x=>x.id===colId).name + ".");
-}
-function nudge(c, dir){
-  const list = [...cards.values()].filter(x => x.col === c.col).sort((a,b)=>a.ord-b.ord);
-  const i = list.findIndex(x => x.id === c.id);
-  const j = i + dir;
-  if(j < 0 || j >= list.length) return;
-  const other = list[j];
-  persist({...c, ord:other.ord});
-  const swapped = {...other, ord:c.ord};
-  cards.set(other.id, swapped);
-  if(mode === "shared") push(() => api("PATCH", cardURL(swapped.id), toDoc(swapped)),
-                             "Couldn't save that reorder to the shared board.");
-  else localSave();
-  render();
-  say(c.title + " moved " + (dir<0 ? "up" : "down") + " in " + COLS.find(x=>x.id===c.col).name + ".");
-}
-
-/* ---------------- pointer drag (mouse anywhere, touch from the grip) ------- */
-let drag = null, dragMoved = false;
-board.addEventListener("pointerdown", e => {
-  if(e.button != null && e.button !== 0) return;
-  const card = e.target.closest(".card"); if(!card) return;
-  if(e.target.closest("a") || e.target.closest("button")) return;
-  const fromGrip = !!e.target.closest("[data-grip]");
-  if(e.pointerType !== "mouse" && !fromGrip) return;      // let touch scroll the column
-  dragMoved = false;
-  drag = {card, id:card.dataset.id, x0:e.clientX, y0:e.clientY, started:false, pid:e.pointerId};
-  card.setPointerCapture(e.pointerId);
-});
-board.addEventListener("pointermove", e => {
-  if(!drag || e.pointerId !== drag.pid) return;
-  const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
-  if(!drag.started){
-    if(Math.hypot(dx,dy) < 6) return;
-    startDrag(e);
-  }
-  moveDrag(e);
-});
-["pointerup","pointercancel"].forEach(t => board.addEventListener(t, e => {
-  if(!drag || e.pointerId !== drag.pid) return;
-  if(drag.started) endDrag(e); else drag = null;
-}));
-
-function startDrag(e){
-  closeMoveMenu();
-  const r = drag.card.getBoundingClientRect();
-  drag.started = true; dragMoved = true;
-  drag.dx = e.clientX - r.left; drag.dy = e.clientY - r.top;
-  const ghost = drag.card.cloneNode(true);
-  ghost.classList.add("ghost");
-  ghost.style.width = r.width + "px";
-  ghost.removeAttribute("tabindex");
-  document.body.appendChild(ghost);
-  drag.ghost = ghost;
-  const ph = document.createElement("div");
-  ph.className = "placeholder";
-  ph.style.height = r.height + "px";
-  drag.ph = ph;
-  drag.card.classList.add("dragging");
-  drag.card.after(ph);
-  document.body.style.userSelect = "none";
-}
-function moveDrag(e){
-  drag.ghost.style.left = (e.clientX - drag.dx) + "px";
-  drag.ghost.style.top  = (e.clientY - drag.dy) + "px";
-  drag.ghost.style.display = "none";
-  const under = document.elementFromPoint(e.clientX, e.clientY);
-  drag.ghost.style.display = "";
-  const body = under && under.closest ? under.closest(".col-body") : null;
-  document.querySelectorAll(".col-body.dropping").forEach(b => b.classList.remove("dropping"));
-  if(!body) return;
-  body.classList.add("dropping");
-  const kids = [...body.querySelectorAll(".card:not(.dragging)")];
-  let ref = null;
-  for(const k of kids){
-    const r = k.getBoundingClientRect();
-    if(e.clientY < r.top + r.height/2){ ref = k; break; }
-  }
-  const emptyNote = body.querySelector(".empty");
-  if(emptyNote) emptyNote.remove();
-  if(ref) body.insertBefore(drag.ph, ref); else body.appendChild(drag.ph);
-  autoScroll(e.clientX);
-}
-function autoScroll(x){
-  const sc = $("#scroller"), r = sc.getBoundingClientRect(), edge = 70;
-  if(x < r.left + edge) sc.scrollLeft -= 16;
-  else if(x > r.right - edge) sc.scrollLeft += 16;
-}
-function endDrag(){
-  const ph = drag.ph, id = drag.id;
-  const body = ph.closest(".col-body");
-  document.querySelectorAll(".col-body.dropping").forEach(b => b.classList.remove("dropping"));
-  drag.ghost.remove();
-  drag.card.classList.remove("dragging");
-  document.body.style.userSelect = "";
-  const c = cards.get(id);
-  if(!body || !c){ ph.remove(); drag = null; setTimeout(()=>dragMoved=false,0); return; }
-
-  const colId = body.dataset.body;
-  const sibs = [...body.children].filter(n => n.classList.contains("card") || n === ph);
-  const idx = sibs.indexOf(ph);
-  const list = [...cards.values()].filter(x => x.col === colId && x.id !== id).sort((a,b)=>a.ord-b.ord);
-  const visible = sibs.filter(n => n !== ph).map(n => cards.get(n.dataset.id)).filter(Boolean);
-  const before = idx > 0 ? visible[idx-1] : null;
-  const after  = idx < visible.length ? visible[idx] : null;
-  let ord;
-  if(!before && !after) ord = 1000;
-  else if(!before) ord = after.ord - 1000;
-  else if(!after)  ord = before.ord + 1000;
-  else ord = (before.ord + after.ord) / 2;
-  ph.remove();
-  const changedCol = c.col !== colId;
-  persist({...c, col:colId, ord});
-  say(c.title + (changedCol ? " moved to " + COLS.find(x=>x.id===colId).name : " reordered") + ".");
-  drag = null;
-  setTimeout(()=>dragMoved=false, 0);
-}
-
-/* ============================ drawer ============================ */
-const drawer = $("#drawer");
-let editing = null;   // card id, or null for a new card
-$("#f-col").innerHTML = COLS.map(c => '<option value="'+c.id+'">'+esc(c.name)+'</option>').join("");
-
-function openDrawer(id, presetCol){
-  closeMoveMenu();
-  editing = id || null;
-  const c = id ? cards.get(id) : null;
-  $("#dtitle").textContent = c ? "Edit issue" : "New issue";
-  $("#f-title").value    = c ? c.title : "";
-  $("#f-desc").value     = c ? c.desc : "";
-  $("#f-reporter").value = c ? c.reporter : "";
-  $("#f-loc").value      = c ? c.loc : "";
-  $("#f-prio").value     = c ? c.prio : "Medium";
-  $("#f-col").value      = c ? c.col : (presetCol || "new");
-  $("#f-date").value     = c ? c.date : new Date().toISOString().slice(0,10);
-  $("#f-link").value     = c ? c.link : "";
-  $("#ddelete").hidden   = !c;
-  $("#f-hint").textContent = c
-    ? "Reported " + (c.date || "date unknown") + (daysOpen(c.date) ? " · " + daysOpen(c.date) : "")
-    : "Filed straight onto the board — no bug form needed.";
-  drawer.showModal();
-  $("#f-title").focus();
-}
-$("#dform").addEventListener("submit", e => {
-  e.preventDefault();
-  const title = $("#f-title").value.trim();
-  if(!title){ $("#f-title").focus(); return; }
-  const colId = $("#f-col").value;
-  const prev = editing ? cards.get(editing) : null;
-  const card = normalize({
-    id: prev ? prev.id : "c-" + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-    title, desc:$("#f-desc").value.trim(), reporter:$("#f-reporter").value.trim(),
-    loc:$("#f-loc").value.trim(), prio:$("#f-prio").value, date:$("#f-date").value,
-    link:$("#f-link").value.trim(), col:colId,
-    ord: (prev && prev.col === colId) ? prev.ord : endOrd(colId)
-  });
-  drawer.close();
-
-  // A saved card that the active filters exclude would vanish silently (the old bug:
-  // matches() is applied unconditionally in render()). Drop the filters so the card
-  // the user just saved is always on screen, and say so out loud.
-  const cleared = filtersActive() && !matches(card);
-  if(cleared) resetFilters();
-  $("#clearf").hidden = !filtersActive();
-
-  persist(card);                                    // persist() re-renders
-  spotlight(card.id);
-  const where = COLS.find(x=>x.id===colId).name;
-  say((prev ? "Saved " + card.title + " in " + where + "." : "Added " + card.title + " to " + where + ".")
-    + (cleared ? " Filters cleared so it is visible." : ""));
-});
-$("#hdradd").addEventListener("click", () => openDrawer(null, "new"));
-$("#dcancel").addEventListener("click", () => drawer.close());
-$("#dclose").addEventListener("click", () => drawer.close());
-$("#ddelete").addEventListener("click", () => {
-  if(!editing) return;
-  const c = cards.get(editing);
-  if(!c || !confirm('Delete "' + c.title + '" from the board?')) return;
-  drawer.close();
-  persistDelete(editing);
-  say("Deleted " + c.title + ".");
-});
-drawer.addEventListener("click", e => { if(e.target === drawer) drawer.close(); });
-
-/* ============================ boot ============================ */
-/* Nothing is drawn until connect() knows which board this is, so the seed cards
-   never flash up in front of the real ones. */
-connect();
-</script>
+<script src="app.js"></script>
 </body>
 </html>

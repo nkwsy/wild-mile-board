@@ -8,7 +8,12 @@ const fs = require("fs");
 const path = require("path");
 
 const ROUTES = {
-  "/api/cards": require("../api/cards")
+  "/api/issues":    require("../api/issues"),
+  "/api/actions":   require("../api/actions"),
+  "/api/photos":    require("../api/photos"),
+  "/api/meta":      require("../api/meta"),
+  "/api/recurring": require("../api/recurring"),
+  "/api/export":    require("../api/export")
 };
 const PUBLIC = path.join(__dirname, "..", "public");
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",

@@ -1,94 +1,168 @@
-# Wild Mile Issue Board
+# Wild Mile Install &amp; Maintenance
 
-A kanban board for tracking Wild Mile issue submissions at Urban Rivers.
+A maintenance management system for Urban Rivers' Wild Mile: report a problem
+from a phone in a few seconds, put a name on it, keep the photos on the record,
+and close it in one tap.
 
-Cards move across **New → Triaged → Scheduled → In Progress → Done**, with a
-separate **Blocked / Needs Info** track. You can drag cards between columns,
-add and edit them in a side panel, and filter by priority or location. It works
-on desktop and on a phone.
+It is a static page plus a handful of Vercel serverless functions over Postgres.
+No framework, no build step.
 
-There are two copies of the board in this repo:
+## What it does
 
-| | File | Card storage | Who sees your changes |
-|---|---|---|---|
-| **Shared board** | `public/index.html` | Postgres, behind `/api` | everyone with the link |
-| **Offline board** | `index.html` | the browser's `localStorage` | only you |
+**Report from the boardwalk.** One sheet: a camera button, one sentence, a row
+of location chips, send. Severity defaults to *Important*. Name, detail and a
+needed-by date are behind *More detail…* and nobody has to open it. The browser
+downscales photos to 1600px before uploading, so a 4 MB camera file goes up as
+about 300 KB. Filing something the current filters would hide clears the
+filters and says so, rather than letting the new issue vanish.
 
-## The shared board
+**The crew's own words.** Severity is `Urgent!` / `Important` / `Keep eyes on`,
+spelled the way the Slack form has spelled it since 2021. Locations are seeded
+from the places people actually name, with the aliases they type: "2017
+gardens", "Nat Geo", "5D triangle", "second gathering nook". Anything typed that
+matches nothing is kept as free text.
 
-`public/index.html` plus the functions in `api/` make one board that the whole
-crew edits. Open it and every card you add, edit, move or delete is written to
-Postgres and shows up for everyone else within a few seconds. The page polls the
-server every 5 seconds; it holds off while you are dragging a card or have the
-editor open, so nothing moves under your hands.
+**One named assignee**, offered the job, who can accept or decline. Declining
+hands the issue back to the unassigned pile instead of leaving it sitting on
+somebody who already said no. Both are history rows.
 
-There is no password: anyone who has the URL can read the board and change it.
-Treat the link as the only thing keeping it private, and don't put anything on a
-card you wouldn't want a stranger to read.
+**One-tap close**, with an optional after-photo. The old close-out form's good
+questions — cause, how confident, who should review — are asked *after* the
+close and stay optional. The one surviving submission of that form in the
+channel came back `Yes / blank / 7 / blank / blank / blank`, and that is what a
+required field buys you.
 
-Two people editing the same card at the same time is last-write-wins — the
-later save is the one that sticks. That is a real board for a small crew, not a
-collaborative text editor, and that trade is deliberate.
+**Recurring inspections.** Templates with a cadence — every N days inside a
+season, or on fixed dates every year — that generate dated issues when somebody
+presses Generate. Nothing appears because a page was loaded, and generating
+twice makes nothing the second time.
 
-If the page cannot reach the API at all — you opened the file from disk, or you
-are on the GitHub Pages copy — it falls back to `localStorage` and says so in a
-banner across the top: *Local copy — not shared*.
+**Anti-rot.** An ageing strip across the top counts open issues nobody has
+touched in a fortnight and sorts them to the top of the list. Closing more than
+three at once demands a written reason, which is recorded on every one of their
+histories. Fourteen Workast tasks went in seconds in 2023 and six Slack List
+items in ninety seconds in 2026; this is the brake.
 
-### What is where
+**Everything else:** per-issue history, board view with drag and drop, list view
+that suits a hundred-plus issues, search and filters, CSV export of exactly what
+the filters are showing.
 
-    index.html            the standalone offline board, unchanged
-    public/index.html     the shared board (served by Vercel)
-    api/cards.js          GET / POST / PATCH ?id= / DELETE ?id=
-    lib/db.js             Postgres: pool, table creation, the card queries
-    lib/http.js           small request/response helpers
-    lib/seed.js           the cards an empty board starts with
+### Not in here yet
+
+- **Importing the Slack List records** (`F0839EZG03H`). Undecided, so not built.
+- **Any auth.** The board is open to anyone with the link, exactly as it was.
+  Treat the URL as the only thing keeping it private.
+
+## How it fits together
+
+    public/index.html     the page
+    public/app.css        the styles
+    public/app.js         the whole client
+    index.html            the old standalone offline board, untouched
+
+    api/issues.js         GET list / GET ?id= / POST / PATCH ?id= / DELETE ?id=
+    api/actions.js        POST assign | accept | decline | close | reopen | note
+    api/photos.js         GET ?id= bytes / GET ?issue= / POST ?issue= / DELETE ?id=
+    api/recurring.js      templates, and ?do=generate
+    api/meta.js           locations, people, templates, vocabulary
+    api/export.js         CSV, same filters as the list
+
+    lib/db.js             pool, schema, the carry-over from the old cards table
+    lib/issues.js         issues, history, assignment, closing, filters
+    lib/photos.js         photos on the record
+    lib/storage.js        where a photo's bytes go: Vercel Blob or Postgres
+    lib/recurring.js      cadences and the instances they make
+    lib/seed.js           locations, people, inspections, the starting issues
+    lib/vocab.js          the severities, statuses and thresholds
+    lib/http.js           request/response helpers
+
     test/server.js        local stand-in for Vercel (npm run dev)
-    test/api.test.js      API tests against a real Postgres (npm test)
+    test/api.test.js      every endpoint, against a real Postgres (npm test)
+    test/migration.test.js  the cards-table carry-over, in a scratch database
+    test/e2e.js           Chromium, desktop and phone (npm run e2e)
 
-`lib/db.js` creates the `cards` table on first use and, if it is empty, fills it
-with the seed cards from `lib/seed.js`.
+### The schema, and what happens to the old one
 
-## Deploying the shared board (Vercel)
+`lib/db.js` creates everything on first use, and every statement is
+`CREATE ... IF NOT EXISTS`, so deploying against a database that already has
+data changes nothing.
 
-1. Push this repo to GitHub.
-2. Go to [vercel.com/new](https://vercel.com/new) and import the repository.
-   Framework preset **Other**; leave the build command empty. `vercel.json`
-   already points the output at `public/`.
-3. In the project, **Storage → Create Database**, pick **Neon** (Serverless
-   Postgres) from the marketplace, and attach it to the project. Neon's Vercel
-   integration sets the connection string itself — it adds both `DATABASE_URL`
-   and `POSTGRES_URL`, and `lib/db.js` reads whichever is present, so there is
-   nothing to copy by hand. Vercel's own Postgres works the same way.
-4. **Settings → Environment Variables** — there is one, and attaching the
-   database in step 3 already set it:
+| Table | What it holds |
+|---|---|
+| `issues` | severity, status, location, reporter, assignee and its accepted/declined state, due date **with its reason**, the close-out fields |
+| `locations` | the seeded places, their aliases, and what kind of thing they are |
+| `people` | who reports and who fixes; anyone who files or is assigned is remembered |
+| `attachments` | many photos per issue, bytes in Postgres or a Blob URL |
+| `activity` | one row for everything that has ever happened to an issue |
+| `inspection_templates` | recurring work; its instances are issues carrying `template_id` |
 
-   | Variable | Required | What it is |
-   |---|---|---|
-   | `DATABASE_URL` | yes | Postgres connection string. `POSTGRES_URL` is used if `DATABASE_URL` is missing; attaching a Neon or Vercel Postgres database sets both for you, so you normally add neither. |
+The first time `issues` is created next to an existing `cards` table, every card
+is carried across: same id, priority folded onto the three severities
+(`Urgent → Urgent!`, `High`/`Medium → Important`, `Low → Keep eyes on`), its
+free-text place resolved onto a location record where one matches, and a history
+row saying where it came from. **Nothing drops the cards table.** If the cards
+table is there but empty — somebody cleared the board on purpose — the new board
+starts empty too rather than sprouting seeds.
 
-5. **Deploy**, then open the project URL — the board comes straight up.
+### Photos
 
-`package.json` pins `"engines": { "node": "22.x" }`, so the functions build on
-Node 22. Vercel retires Node 20 builds on 30 September 2026; leave the pin in
-place (or raise it) rather than removing it.
+`lib/storage.js` picks a driver at runtime:
 
-### Running it locally
+- **Vercel Blob**, if `BLOB_READ_WRITE_TOKEN` is set. Photos go to the Blob
+  store and `/api/photos?id=` redirects to them.
+- **Postgres** otherwise. Bytes live in a `bytea` column, capped at 3 MB, served
+  with a long immutable cache header.
+
+There is no Blob store today and the Postgres path is the one that has been
+tested. If one is created later nothing needs migrating: old photos keep serving
+out of Postgres and new ones land in Blob.
+
+## Running it
 
     npm install
     DATABASE_URL=postgres://localhost/wildmile npm run dev
 
-then open <http://127.0.0.1:3000>. `npm test` runs the API tests; point
-`DATABASE_URL` at a throwaway database, because they write to it.
+then open <http://127.0.0.1:3000>.
+
+    DATABASE_URL=postgres://localhost/wildmile_test npm test    # API tests
+    DATABASE_URL=postgres://localhost/wildmile_test npm run e2e # Chromium
+
+Both suites write, so point them at a database you do not mind losing — the API
+tests drop and recreate their tables on every run, and the migration test
+creates a scratch database of its own.
+
+## Deploying (Vercel)
+
+1. Push this repo to GitHub.
+2. [vercel.com/new](https://vercel.com/new), import the repository. Framework
+   preset **Other**; leave the build command empty. `vercel.json` already points
+   the output at `public/`.
+3. **Storage → Create Database**, pick **Neon** (Serverless Postgres) and attach
+   it to the project. Neon's integration sets both `DATABASE_URL` and
+   `POSTGRES_URL`; `lib/db.js` reads whichever is present, so there is nothing
+   to copy by hand.
+4. **Deploy.**
+
+| Variable | Required | What it is |
+|---|---|---|
+| `DATABASE_URL` | yes | Postgres connection string. `POSTGRES_URL` is used if it is missing; attaching a Neon or Vercel Postgres database sets both. |
+| `BLOB_READ_WRITE_TOKEN` | no | If a Vercel Blob store is attached, photos go there instead of into Postgres. |
+
+`package.json` pins `"engines": { "node": "22.x" }`. Vercel retires Node 20
+builds on 30 September 2026; leave the pin in place rather than removing it.
+
+### Generating inspections on a schedule
+
+Generation is deliberately explicit. To have it happen without anybody pressing
+the button, point a cron at it:
+
+    curl -X POST "https://<your-app>/api/recurring?do=generate" \
+      -H 'content-type: application/json' -d '{"days":60,"actor":"nightly"}'
+
+Running it more often than it has work to do is harmless.
 
 ## The offline board (GitHub Pages)
 
 `index.html` at the repo root is unchanged: one self-contained file, no build,
-no server, no database. Open it in a browser and it runs. Its cards live in that
-browser's `localStorage`, so two people looking at it see two different boards —
-which is exactly why the shared board exists.
-
-1. Repo **Settings → Pages**.
-2. Under **Build and deployment**, set **Source** to *Deploy from a branch*,
-   branch `main`, folder `/ (root)`.
-3. The board is live at `https://<org>.github.io/<repo>/` in a minute or two,
-   and redeploys on every push to `main`.
+no server, no database, cards in `localStorage`. It is the thing the shared
+board exists to replace, kept because the Pages deploy points at it.
