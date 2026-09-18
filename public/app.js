@@ -66,10 +66,6 @@ const daysSince = iso => {
   const t = Date.parse(iso);
   return isNaN(t) ? 0 : Math.floor((Date.now() - t) / 86400000);
 };
-const ago = iso => {
-  const d = daysSince(iso);
-  return d < 1 ? "today" : d === 1 ? "1 day" : d + " days";
-};
 /* What the board says under a card. "today untouched" reads like nonsense. */
 const untouchedFor = iso => {
   const d = daysSince(iso);
@@ -128,8 +124,11 @@ async function api(method, path, body) {
   return payload;
 }
 
-/* Wraps a write so the page never hangs on a failure: it says what went wrong
-   and forces the next poll to pull the server's version back. */
+/* Every write goes through here. On failure it says what went wrong, forces the
+   next poll to pull the server's version back, and returns undefined — so a
+   caller writes `if (!out) return;` instead of wrapping itself in an empty
+   catch. Every endpoint answers with a JSON object, so a truthy result means it
+   went through. */
 async function write(run, trouble) {
   state.inflight++;
   try {
@@ -137,7 +136,7 @@ async function write(run, trouble) {
   } catch (err) {
     state.lastSig = "";
     toast(trouble + " " + err.message, true);
-    throw err;
+    return undefined;
   } finally {
     state.inflight--;
   }
@@ -519,8 +518,9 @@ $("#tpl-grid").addEventListener("click", async e => {
   const toggle = e.target.closest("[data-toggle]");
   if (toggle) {
     const t = state.meta.templates.find(x => x.id === toggle.dataset.toggle);
-    await write(() => api("PATCH", "/api/recurring?id=" + encodeURIComponent(t.id), { active: !t.active }),
-      "Couldn't change that inspection.");
+    const done = await write(() => api("PATCH", "/api/recurring?id=" + encodeURIComponent(t.id),
+      { active: !t.active }), "Couldn't change that inspection.");
+    if (!done) return;
     await reloadMeta();
     render();
   }
@@ -532,6 +532,7 @@ async function runGenerate(templateId) {
   const out = await write(
     () => api("POST", "/api/recurring?do=generate", { templateId, days: 60, actor: me() }),
     "Couldn't generate the inspections.");
+  if (!out) return;
   await Promise.all([reloadMeta(), refresh(true)]);
   render();
   const made = out.created.length;
@@ -585,9 +586,9 @@ function drawSeverityPicks() {
   $("#sev-picks").innerHTML = state.meta.severities.map(s =>
     `<button type="button" class="pick ${sevClass(s)}" data-sev-pick="${esc(s)}"`
     + ` aria-pressed="${s === "Important"}">${esc(s)}</button>`).join("");
-  const sel = $("#tpl-sev");
-  if (sel) sel.innerHTML = state.meta.severities.map(s => `<option>${esc(s)}</option>`).join("");
 }
+const severityOptions = chosen => state.meta.severities
+  .map(s => `<option${s === chosen ? " selected" : ""}>${esc(s)}</option>`).join("");
 
 $("#where-picks").addEventListener("click", e => {
   const b = e.target.closest("[data-where]"); if (!b) return;
@@ -676,7 +677,7 @@ $("#report-form").addEventListener("submit", async e => {
   send.disabled = true;
   send.textContent = "Sending…";
   try {
-    const { issue } = await write(() => api("POST", "/api/issues", {
+    const filed = await write(() => api("POST", "/api/issues", {
       title: sentence,
       descr: $("#detail").value.trim(),
       location: where,
@@ -687,6 +688,8 @@ $("#report-form").addEventListener("submit", async e => {
       dueReason: $("#due-why").value.trim() || undefined,
       actor: who
     }), "Couldn't file that.");
+    if (!filed) return;
+    const issue = filed.issue;
 
     for (const shot of shots) {
       await write(() => api("POST", "/api/photos?issue=" + encodeURIComponent(issue.id),
@@ -703,8 +706,7 @@ $("#report-form").addEventListener("submit", async e => {
     spotlight(issue.id);
     say(`Filed "${issue.title}"${shots.length ? " with " + shots.length + " photo(s)" : ""}.`
       + (wasFiltered ? " Filters cleared so you can see it." : ""));
-  } catch { /* write() already said so */ }
-  finally {
+  } finally {
     send.disabled = false;
     send.textContent = "Send it";
   }
@@ -729,13 +731,10 @@ const drawer = $("#drawer");
 
 async function openIssue(id) {
   closeMoveMenu();
-  try {
-    const { issue } = await api("GET", "/api/issues?id=" + encodeURIComponent(id));
-    state.detail = issue;
-  } catch (err) {
-    toast("Couldn't open that issue. " + err.message, true);
-    return;
-  }
+  const out = await write(() => api("GET", "/api/issues?id=" + encodeURIComponent(id)),
+    "Couldn't open that issue.");
+  if (!out) return;
+  state.detail = out.issue;
   drawIssue();
   if (!drawer.open) drawer.showModal();
 }
@@ -756,8 +755,7 @@ function drawIssue() {
     <div class="f2">
       <div class="f">
         <label for="e-sev">Severity</label>
-        <select id="e-sev">${state.meta.severities.map(s =>
-          `<option${s === i.severity ? " selected" : ""}>${esc(s)}</option>`).join("")}</select>
+        <select id="e-sev">${severityOptions(i.severity)}</select>
       </div>
       <div class="f">
         <label for="e-status">Column</label>
@@ -889,25 +887,27 @@ $("#dbody").addEventListener("change", async e => {
   e.target.value = "";
   const kind = i.status === "done" ? "after" : "photo";
   for (const file of files) {
-    try {
-      const dataUrl = await shrink(file);
-      await write(() => api("POST", "/api/photos?issue=" + encodeURIComponent(i.id),
-        { dataUrl, kind, actor: me() }), "That photo didn't attach.");
-    } catch { /* already reported */ }
+    let dataUrl;
+    try { dataUrl = await shrink(file); }
+    catch (err) { toast("Couldn't read that image. " + err.message, true); continue; }
+    await write(() => api("POST", "/api/photos?issue=" + encodeURIComponent(i.id),
+      { dataUrl, kind, actor: me() }), "That photo didn't attach.");
   }
   await act(() => api("GET", "/api/issues?id=" + encodeURIComponent(i.id)));
 });
 
 /* Runs an action, then reloads the issue and the board around it. */
 async function act(run) {
-  try {
-    const out = await write(run, "That didn't go through.");
-    if (out && out.issue) state.detail = out.issue;
-    else state.detail = (await api("GET", "/api/issues?id=" + encodeURIComponent(state.detail.id))).issue;
-    drawIssue();
-    await refresh(true);
-    render();
-  } catch { /* write() already said so */ }
+  const out = await write(run, "That didn't go through.");
+  if (!out) return;
+  const fresh = out.issue
+    || (await write(() => api("GET", "/api/issues?id=" + encodeURIComponent(state.detail.id)),
+                    "Couldn't reload that issue.") || {}).issue;
+  if (!fresh) return;
+  state.detail = fresh;
+  drawIssue();
+  await refresh(true);
+  render();
 }
 
 $("#dfoot").addEventListener("click", async e => {
@@ -946,13 +946,13 @@ $("#dfoot").addEventListener("click", async e => {
 
   if (e.target.id === "do-delete") {
     if (!confirm(`Delete "${i.title}" and its photos and history for good?`)) return;
-    try {
-      await write(() => api("DELETE", "/api/issues?id=" + encodeURIComponent(i.id)), "Couldn't delete that.");
-      drawer.close();
-      state.detail = null;
-      await refresh(true);
-      render();
-    } catch { /* already reported */ }
+    const gone = await write(() => api("DELETE", "/api/issues?id=" + encodeURIComponent(i.id)),
+      "Couldn't delete that.");
+    if (!gone) return;
+    drawer.close();
+    state.detail = null;
+    await refresh(true);
+    render();
   }
 });
 
@@ -984,16 +984,15 @@ $("#bulk-form").addEventListener("submit", async e => {
   const ids = [...state.selected];
   const actor = $("#bulk-actor").value.trim();
   if (actor) me(actor);
-  try {
-    const out = await write(() => api("POST", "/api/actions", {
-      action: "close", ids, actor, reason: $("#bulk-reason").value.trim()
-    }), "Couldn't close those.");
-    bulk.close();
-    state.selected.clear();
-    await refresh(true);
-    render();
-    say(`Closed ${out.closed.length}.`);
-  } catch { /* write() already said so */ }
+  const out = await write(() => api("POST", "/api/actions", {
+    action: "close", ids, actor, reason: $("#bulk-reason").value.trim()
+  }), "Couldn't close those.");
+  if (!out) return;
+  bulk.close();
+  state.selected.clear();
+  await refresh(true);
+  render();
+  say(`Closed ${out.closed.length}.`);
 });
 $("#bulk-cancel").addEventListener("click", () => bulk.close());
 $("#bulk-close").addEventListener("click", () => bulk.close());
@@ -1005,7 +1004,7 @@ let editingTemplate = null;
 
 function openTemplate(t) {
   editingTemplate = t || null;
-  drawSeverityPicks();
+  $("#tpl-sev").innerHTML = severityOptions(t ? t.severity : "Keep eyes on");
   $("#tpl-title").textContent = t ? "Edit inspection" : "New recurring inspection";
   $("#tpl-name").value = t ? t.title : "";
   $("#tpl-descr").value = t ? t.descr : "";
@@ -1045,29 +1044,25 @@ $("#tpl-form").addEventListener("submit", async e => {
     seasonEnd: $("#tpl-season-end").value.trim(),
     monthDays: $("#tpl-monthdays").value.trim()
   };
-  try {
-    if (editingTemplate) {
-      await write(() => api("PATCH", "/api/recurring?id=" + encodeURIComponent(editingTemplate.id), payload),
-        "Couldn't save that inspection.");
-    } else {
-      await write(() => api("POST", "/api/recurring", payload), "Couldn't create that inspection.");
-    }
-    tplDialog.close();
-    await reloadMeta();
-    render();
-    say("Inspection saved.");
-  } catch { /* write() already said so */ }
+  const saved = editingTemplate
+    ? await write(() => api("PATCH", "/api/recurring?id=" + encodeURIComponent(editingTemplate.id), payload),
+        "Couldn't save that inspection.")
+    : await write(() => api("POST", "/api/recurring", payload), "Couldn't create that inspection.");
+  if (!saved) return;
+  tplDialog.close();
+  await reloadMeta();
+  render();
+  say("Inspection saved.");
 });
 
 $("#tpl-delete").addEventListener("click", async () => {
   if (!editingTemplate || !confirm(`Stop generating "${editingTemplate.title}"? Issues it already made stay.`)) return;
-  try {
-    await write(() => api("DELETE", "/api/recurring?id=" + encodeURIComponent(editingTemplate.id)),
-      "Couldn't delete that inspection.");
-    tplDialog.close();
-    await reloadMeta();
-    render();
-  } catch { /* write() already said so */ }
+  const gone = await write(() => api("DELETE", "/api/recurring?id=" + encodeURIComponent(editingTemplate.id)),
+    "Couldn't delete that inspection.");
+  if (!gone) return;
+  tplDialog.close();
+  await reloadMeta();
+  render();
 });
 
 /* ============================ board interaction ============================ */
@@ -1145,13 +1140,12 @@ async function moveTo(issue, status, ord) {
   issue.status = status;
   if (ord !== undefined) issue.ord = ord;
   render();
-  try {
-    await write(() => api("PATCH", "/api/issues?id=" + encodeURIComponent(issue.id), patch),
-      "Couldn't move that.");
-    await refresh(true);
-    render();
-    say(`${issue.title} moved to ${statusName(status)}.`);
-  } catch { /* write() already said so */ }
+  const moved = await write(() => api("PATCH", "/api/issues?id=" + encodeURIComponent(issue.id), patch),
+    "Couldn't move that.");
+  if (!moved) return;
+  await refresh(true);
+  render();
+  say(`${issue.title} moved to ${statusName(status)}.`);
 }
 
 /* ---------------- pointer drag (mouse anywhere, touch from the grip) ------- */
