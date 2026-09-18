@@ -901,12 +901,16 @@ $("#dbody").addEventListener("change", async e => {
 
 /* Runs an action, then reloads the issue and the board around it. */
 async function act(run) {
+  const id = state.detail && state.detail.id;
+  if (!id) return;
   const out = await write(run, "That didn't go through.");
-  if (!out) return;
+  // The panel can be closed while the request is in the air; if it is, the
+  // write still stands but there is nothing left to redraw.
+  if (!out || !state.detail) return;
   const fresh = out.issue
-    || (await write(() => api("GET", "/api/issues?id=" + encodeURIComponent(state.detail.id)),
+    || (await write(() => api("GET", "/api/issues?id=" + encodeURIComponent(id)),
                     "Couldn't reload that issue.") || {}).issue;
-  if (!fresh) return;
+  if (!fresh || !state.detail) return;
   state.detail = fresh;
   drawIssue();
   await refresh(true);

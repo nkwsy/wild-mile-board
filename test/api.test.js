@@ -250,8 +250,14 @@ test("dragging a card into Done closes it properly, history and all", async () =
   const done = await call("PATCH", "/api/issues?id=" + id, { status: "done", actor: "Maya Kelly" });
   assert.equal(done.body.issue.status, "done");
   assert.ok(done.body.issue.closedAt, "the close timestamp is set even coming in off the board");
-  assert.ok(done.body.issue.history.some(h => h.kind === "closed"));
+  assert.deepEqual(done.body.issue.history.map(h => h.kind), ["created", "closed"],
+    "one row saying it closed, not that plus a half-written status change");
   await call("DELETE", "/api/issues?id=" + id);
+});
+
+test("closing one issue that is not there is a 404", async () => {
+  const gone = await call("POST", "/api/actions", { action: "close", id: "no-such-issue", actor: "x" });
+  assert.equal(gone.status, 404);
 });
 
 test("no silent bulk amnesty: closing a pile needs a reason, and it is recorded", async () => {
@@ -418,6 +424,21 @@ test("recurring inspections generate dated issues, once", async () => {
 
   for (const i of instances.body.issues) await call("DELETE", "/api/issues?id=" + i.id);
   for (const c of quiet.body.created) await call("DELETE", "/api/issues?id=" + c.id);
+});
+
+test("a season that runs past new year still generates", async () => {
+  const made = await call("POST", "/api/recurring", {
+    title: "Winter anchor watch", cadence: "every_days", intervalDays: 30,
+    seasonStart: "11-01", seasonEnd: "02-28"
+  });
+  assert.equal(made.status, 201);
+  const gen = await call("POST", "/api/recurring?do=generate",
+    { templateId: made.body.template.id, from: "2026-11-01", to: "2027-02-28" });
+  assert.deepEqual(gen.body.created.map(c => c.dueOn),
+    ["2026-11-01", "2026-12-01", "2026-12-31", "2027-01-30"],
+    "the window closes in the following year rather than producing nothing");
+  for (const c of gen.body.created) await call("DELETE", "/api/issues?id=" + c.id);
+  await call("DELETE", "/api/recurring?id=" + made.body.template.id);
 });
 
 test("a template that could never produce a date is refused", async () => {

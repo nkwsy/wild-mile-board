@@ -24,11 +24,11 @@ const ACTIONS = {
     const ids = b.ids && b.ids.length ? b.ids : [b.id];
     const result = await issues.closeIssues(ids, { actor: b.actor, note: b.note, reason: b.reason });
     // One issue closed on its own page wants the whole issue back so the panel
-    // can redraw; a batch only wants to know what happened.
-    if (ids.length === 1 && result.closed.length === 1) {
-      return { ...result, issue: await issues.getIssue(result.closed[0]) };
-    }
-    return result;
+    // can redraw; a batch only wants to know what happened. Asking to close one
+    // issue that is not there is a 404, not a cheerful 200 with an empty list.
+    if (ids.length > 1) return result;
+    if (result.missing.length) return { ...result, issue: null };
+    return { ...result, issue: await issues.getIssue(ids[0]) };
   }
 };
 
